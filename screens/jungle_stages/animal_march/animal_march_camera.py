@@ -88,7 +88,7 @@ class AnimalMarchCamera:
             if self.keypoints is not None:
                 self.game_logic.process_keypoints(self.keypoints)
         elif not self.camera_on and not self.game_logic.game_over:
-            pause_font = dynapuff(80)
+            pause_font = dynapuff(60)
             pause_text = pause_font.render("Press Camera to Begin", True, (255, 255, 255))
             pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
                                                      self.screen.get_height() // 2))
@@ -107,7 +107,7 @@ class AnimalMarchCamera:
             self.camera_button.draw()
 
         # --- Win Overlay ---
-        if self.game_logic.game_over or not self.camera_on:
+        if self.game_logic.game_over:
             # Draw full-screen win image
             self.screen.blit(self.win_image, (0, 0))
 
@@ -125,13 +125,16 @@ class AnimalMarchCamera:
                 self.stop_camera()
                 return "animal_march_intro"
 
-            # Camera toggle only if game is not over
+            # Camera toggle (start/stop)
             if not self.game_logic.game_over and self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
+                if self.camera_on:
+                    # Only start camera thread if turned on
+                    self.start_camera_thread()
 
-            # Back to Menu button (after game over / camera off)
-            if (self.game_logic.game_over or not self.camera_on) and self.menu_button.is_clicked(mouse_pos):
-                self.stop_camera()
-                return "jungle_selector"  # go back to main menu
+            # Back to menu button after game over
+            if self.game_logic.game_over and self.menu_button.is_clicked(mouse_pos):
+                self.stop_camera_thread()
+                return "jungle_selector"
 
         return None
