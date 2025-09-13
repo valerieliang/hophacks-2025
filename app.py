@@ -3,7 +3,8 @@ from screens.title_screen import TitleScreen
 from screens.stage_select import StageSelect
 from screens.jungle_stages.jungle_intro import JungleIntro
 from screens.jungle_stages.jungle_selector import JungleSelector
-from screens.jungle_stages.jungle_stage import JungleStage
+from screens.jungle_stages.animal_march.animal_march_intro import AnimalMarchIntro
+from screens.jungle_stages.animal_march.animal_march_camera import AnimalMarchCamera
 
 pygame.init()
 
@@ -19,7 +20,8 @@ screens = {
     "stage_select": StageSelect(screen),
     "jungle_intro": JungleIntro(screen),
     "jungle_selector": JungleSelector(screen),
-    "jungle_stage": JungleStage(screen)
+    "animal_march_intro": AnimalMarchIntro(screen),
+    "animal_march_camera":AnimalMarchCamera(screen)
 }
 current_screen = "title"
 
