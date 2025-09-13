@@ -1,58 +1,85 @@
-import pygame
-import sys
+import cv2
+from ultralytics import YOLO
+import numpy as np
+import time
 
-# Example wrist and leg point data (replace with real tracking data)
-# Each tuple: (frame_number, wrist_y, leg_y)
-movement_data = [
-    (0, 100, 300),
-    (1, 110, 310),
-    (2, 90, 290),
-    (3, 120, 320),
-    (4, 80, 280),
-    (5, 130, 330),
-    (6, 70, 270),
-    (7, 140, 340),
-]
-def detect_steps(data):
-    points = 0
-    last_wrist_dir = 0
-    last_leg_dir = 0
-    for i in range(1, len(data)):
-        _, wrist_y_prev, leg_y_prev = data[i-1]
-        _, wrist_y, leg_y = data[i]
-        wrist_dir = 1 if wrist_y > wrist_y_prev else -1
-        leg_dir = 1 if leg_y > leg_y_prev else -1
-        # Detect alternation (direction change)
-        if wrist_dir != last_wrist_dir and leg_dir != last_leg_dir:
-            points += 1
-        last_wrist_dir = wrist_dir
-        last_leg_dir = leg_dir
-    return points
+# Constants
+KNEE_LIFT_THRESHOLD = 0.9  # Ratio of knee y to hip y (lower is higher knee)
+STEP_SCORE_TARGET = 10     # Number of steps to finish minigame
+FONT = cv2.FONT_HERSHEY_SIMPLEX
+
+# Load YOLOv8 pose model
+model = YOLO('yolov8n-pose.pt')  # Make sure you have this model
+
+def get_keypoint(kps, idx):
+    """Helper to get (x, y, conf) for a keypoint index."""
+    if kps is None or len(kps) <= idx * 3 + 2:
+        return None
+    return kps[idx*3], kps[idx*3+1], kps[idx*3+2]
+
+def is_knee_lifted(kps, side='left'):
+    # COCO: 11=left hip, 13=left knee, 12=right hip, 14=right knee
+    if side == 'left':
+        hip = get_keypoint(kps, 11)
+        knee = get_keypoint(kps, 13)
+    else:
+        hip = get_keypoint(kps, 12)
+        knee = get_keypoint(kps, 14)
+    if hip is None or knee is None or hip[2] < 0.5 or knee[2] < 0.5:
+        return False
+    # In image coordinates, y increases downward
+    return knee[1] <= hip[1]  # Knee at or above hip
 
 def main():
-    pygame.init()
-    screen = pygame.display.set_mode((640, 480))
-    pygame.display.set_caption("Fruit Points")
-    font = pygame.font.SysFont(None, 48)
-    clock = pygame.time.Clock()
-
-    # Simulate step detection
-    points = detect_steps(movement_data)
+    cap = cv2.VideoCapture(0)
+    score = 0
+    last_step = None  # 'left', 'right', or None
+    step_cooldown = 0.3  # seconds
+    last_step_time = time.time()
 
     while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-        screen.fill((255, 255, 255))
-        # Display points in top right
-        points_text = font.render(f"Points: {points}", True, (0, 0, 0))
-        text_rect = points_text.get_rect(topright=(630, 10))
-        screen.blit(points_text, text_rect)
+        # Run pose estimation
+        results = model(frame, verbose=False)
+        if results and results[0].keypoints is not None:
+            kps = results[0].keypoints.xy[0].cpu().numpy().flatten()
+            left_lifted = is_knee_lifted(kps, 'left')
+            right_lifted = is_knee_lifted(kps, 'right')
 
-        pygame.display.flip()
-        clock.tick(60)
+            now = time.time()
+            # Detect alternating steps
+            if left_lifted and last_step != 'left' and now - last_step_time > step_cooldown:
+                score += 1
+                last_step = 'left'
+                last_step_time = now
+            elif right_lifted and last_step != 'right' and now - last_step_time > step_cooldown:
+                score += 1
+                last_step = 'right'
+                last_step_time = now
+
+            # Draw skeleton
+            results[0].plot(show=False, conf=False, boxes=False, labels=False, img=frame)
+
+        # Draw score
+        cv2.rectangle(frame, (10, 10), (180, 60), (0, 0, 0), -1)
+        cv2.putText(frame, f"Score: {score}", (20, 45), FONT, 1.2, (0, 255, 0), 3)
+
+        cv2.imshow('Animal March!', frame)
+
+        # End game if score reached
+        if score >= STEP_SCORE_TARGET:
+            break
+
+        if cv2.waitKey(1) & 0xFF == 27:  # ESC to quit
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+    # Return to jungle_selector (replace with your actual navigation)
 
 if __name__ == "__main__":
     main()
