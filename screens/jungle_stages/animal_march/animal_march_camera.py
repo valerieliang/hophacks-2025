@@ -12,6 +12,7 @@ from assets.fonts import dynapuff
 from minigames.animal_march_logic import *
 
 FRUIT_SIZE = (100, 100)
+FRUIT_FOLDER = "assets/fruits/"
 
 class AnimalMarchCamera:
     def __init__(self, screen):
