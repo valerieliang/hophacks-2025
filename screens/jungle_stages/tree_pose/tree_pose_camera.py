@@ -17,7 +17,7 @@ class TreePoseCamera:
         self.back_button = BackButton(screen, pos=(60, 60))
         self.camera_button = CameraToggleButton(screen, size=200)
         self.font = dynapuff(40)
-        self.camera_on = True
+        self.camera_on = False
 
         # Threading
         self.frame = None
@@ -75,10 +75,9 @@ class TreePoseCamera:
             if self.keypoints is not None:
                 self.game_logic.update(self.keypoints)
 
-        # If camera is off and game not over, show "Paused"
         elif not self.camera_on and not self.game_logic.game_over:
-            pause_font = dynapuff(80)
-            pause_text = pause_font.render("Paused", True, (255, 255, 255))
+            pause_font = dynapuff(60)
+            pause_text = pause_font.render("Press Camera to Begin", True, (255, 255, 255))
             pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
                                                      self.screen.get_height() // 2))
             self.screen.blit(pause_text, pause_rect)
