@@ -35,7 +35,7 @@ class StageSelect:
         self.placeholder_color = (150, 150, 150)  # grey
 
         # Title font
-        self.font = dynapuff(48, bold=True)
+        self.font = dynapuff(60, bold=True)
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))

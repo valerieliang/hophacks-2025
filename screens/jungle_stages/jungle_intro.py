@@ -1,6 +1,7 @@
 import pygame
 from ui.buttons import Button
 from ui.back_button import BackButton
+from ui.desc_font import DescFont
 from assets.fonts import dynapuff
 
 ICON_DIM = 500
@@ -10,7 +11,7 @@ class JungleIntro:
         self.screen = screen
         w, h = screen.get_size()
         self.title_font = dynapuff(72, bold=True)
-        self.desc_font = dynapuff(24)
+        self.desc_font = DescFont(screen, size=24, bold=False, color=(240, 240, 240), margin=50)
         self.back_button = BackButton(screen)
 
         # Load stage icon
@@ -31,21 +32,19 @@ class JungleIntro:
         self.screen.fill((34, 139, 34))
 
         # Draw the stage icon in the middle top
-        # Center the icon horizontally, 50 pixels from the top
         icon_rect = self.icon.get_rect(centerx=self.screen.get_width() // 2)
-        icon_rect.top = 20
+        icon_rect.top = 0
         self.screen.blit(self.icon, icon_rect)
 
         # Description under the image (for parents)
-        desc_lines = [
-            "In this stage, children practice coordination, balance,",
-            "and gross motor skills through fun jungle-themed games.",
-            "Each exercise is wrapped in a story to keep them engaged."
-        ]
-        for i, line in enumerate(desc_lines):
-            text = self.desc_font.render(line, True, (240, 240, 240))
-            self.screen.blit(text, text.get_rect(center=(self.screen.get_width() // 2, 500 + i * 40)))
+        description = ("In this stage, children practice coordination, balance, and gross motor skills "
+                       "through fun jungle-themed games. Each exercise is wrapped in a story to keep them engaged.")
 
+        # Start y-coordinate just below the icon
+        y_start = icon_rect.bottom -10
+        self.desc_font.render_text(description, y_start)
+
+        # Draw buttons
         self.start_button.draw()
         self.back_button.draw()
 
