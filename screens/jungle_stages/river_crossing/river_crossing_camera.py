@@ -1,6 +1,7 @@
 import pygame
 import cv2
 import threading
+import numpy as np
 import time
 from ui.camera_manager import CameraManager
 from ui.back_button import BackButton
@@ -20,7 +21,8 @@ class RiverCrossingCamera:
         self.camera_on = False
 
         # Threading
-        self.frame = None
+        self.surface = None
+        self.offset = (0, 0)
         self.keypoints = None
         self._stop_thread = False
         self._thread = None
@@ -28,20 +30,18 @@ class RiverCrossingCamera:
         # Game logic
         self.game_logic = RiverCrossingGame()
 
-        # Win overlay image
+        # Win overlay
         self.win_image = pygame.image.load("assets/jungle_winner.png").convert_alpha()
         self.win_image = pygame.transform.smoothscale(self.win_image, self.screen.get_size())
 
-        # Back-to-menu button (bottom center)
+        # Back-to-menu button
         screen_w, screen_h = screen.get_size()
         self.menu_button = Button(
             screen,
             text="Back to Menu",
-            pos=(screen_w // 2, screen_h - 100),
+            pos=(screen_w // 2, screen_h - 100),  # bottom center
             size=(300, 80)
         )
-
-        self.score = 0
 
     # -------------------- Camera Thread --------------------
     def start_camera_thread(self):
@@ -55,16 +55,15 @@ class RiverCrossingCamera:
     def _capture_loop(self):
         while not self._stop_thread:
             if self.camera_on and self.cap is not None and self.cap.isOpened():
-                ret, frame = self.cap.read()
-                if ret and frame is not None:
-                    try:
-                        processed_frame, _, keypoints = self.camera_manager.process_frame(frame)
-                        # Update shared variables safely
-                        self.frame = processed_frame
+                try:
+                    surface, offset, keypoints = self.camera_manager.get_frame_surface(self.cap)
+                    if surface is not None:
+                        self.surface = surface
+                        self.offset = offset
                         self.keypoints = keypoints
-                    except Exception as e:
-                        print(f"Error processing frame: {e}")
-            time.sleep(0.01)  # small delay to prevent 100% CPU usage
+                except Exception as e:
+                    print(f"Error processing frame: {e}")
+            time.sleep(0.01)
 
     def stop_camera_thread(self):
         self._stop_thread = True
@@ -74,35 +73,54 @@ class RiverCrossingCamera:
 
     # -------------------- Draw --------------------
     def draw(self):
-        # Always fill background
         self.screen.fill((102, 204, 255))
 
-        # Draw camera frame if active
-        if self.camera_on and self.frame is not None and not self.game_logic.game_over:
-            self.screen.blit(self.frame, (0, 0))
-            if self.keypoints is not None:
-                self.game_logic.update(self.keypoints)
+        if self.camera_on and self.surface and not self.game_logic.game_over:
+            # Draw camera surface centered
+            self.screen.blit(self.surface, self.offset)
+
+            # Draw stepping stone (one at a time)
+            if self.keypoints:
+                # Align next stone with average ankle Y
+                for kp in self.keypoints:
+                    feet = self.game_logic.feet_positions(kp)
+                    if feet:
+                        avg_y = sum(f[1] for f in feet)//len(feet)
+                        self.game_logic.update_stone_y(avg_y)
+                        self.game_logic.check_stones(feet)
+
+            # Draw keypoints
+            if self.keypoints:
+                for kp in self.keypoints:
+                    feet = self.game_logic.feet_positions(kp)
+                    if feet:
+                        for fx, fy in feet:
+                            # Add offset from camera centering
+                            ox, oy = self.offset
+                            pygame.draw.circle(self.screen, (255, 255, 0), (fx+ox, fy+oy), 15)
+
+            # Draw next stone on screen
+            self.game_logic.draw_stone_on_surface(self.screen, self.offset)
 
         elif not self.camera_on and not self.game_logic.game_over:
             pause_font = dynapuff(60)
-            pause_text = pause_font.render("Press Camera to Begin", True, (255, 255, 255))
-            pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
-                                                     self.screen.get_height() // 2))
-            self.screen.blit(pause_text, pause_rect)
+            text = pause_font.render("Press Camera to Begin", True, (255,255,255))
+            rect = text.get_rect(center=(self.screen.get_width()//2, self.screen.get_height()//2))
+            self.screen.blit(text, rect)
 
-        # print current score in the bottom right of the screen
-        score_text = self.font.render(f"Score: {self.game_logic.score}", True, (255, 255, 255))
-        score_rect = score_text.get_rect(bottomright=(self.screen.get_width() - 20, self.screen.get_height() - 20))
+        # Draw score
+        score_text = self.font.render(f"Score: {self.game_logic.score}", True, (255,255,255))
+        score_rect = score_text.get_rect(bottomright=(self.screen.get_width()-20, self.screen.get_height()-20))
         self.screen.blit(score_text, score_rect)
 
-        # Buttons
+        # Draw buttons
         self.back_button.draw()
         if not self.game_logic.game_over:
             self.camera_button.draw()
 
-        # Win overlay and menu button
+        # Win overlay
         if self.game_logic.game_over:
-            self.screen.blit(self.win_image, (0, 0))
+            self.screen.blit(self.win_image, (0,0))
             self.menu_button.draw()
 
         pygame.display.flip()
@@ -113,17 +131,11 @@ class RiverCrossingCamera:
             if self.back_button.is_clicked(mouse_pos):
                 self.stop_camera_thread()
                 return "river_crossing_intro"
-
-            # Camera toggle (start/stop)
             if not self.game_logic.game_over and self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
                 if self.camera_on:
-                    # Only start camera thread if turned on
                     self.start_camera_thread()
-
-            # Back to menu button after game over
             if self.game_logic.game_over and self.menu_button.is_clicked(mouse_pos):
                 self.stop_camera_thread()
                 return "jungle_selector"
-
         return None

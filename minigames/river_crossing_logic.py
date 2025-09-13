@@ -1,30 +1,54 @@
-import cv2
 import numpy as np
-from ultralytics import YOLO
 import cv2
+import random
+import pygame
 
-POINT_RADIUS = 50
-FLOOR_POINTS = [(200, 400), (440, 400)]
+POINT_RADIUS = 40
+MAX_X_DISTANCE = 150  # max horizontal distance a foot can reach from previous stone
 
 class RiverCrossingGame:
     def __init__(self, points_to_win=5):
-        self.model = YOLO('yolov8n-pose.pt')
         self.score = 0
-        self.visited = [False] * len(FLOOR_POINTS)
         self.game_over = False
         self.points_to_win = points_to_win
+        self.stones = []  # dynamic stones
+        self.generate_initial_stones()
 
-    def draw_points(self, frame):
-        """Draw floor points on the frame."""
-        for i, pt in enumerate(FLOOR_POINTS):
-            color = (0, 255, 0) if self.visited[i] else (0, 0, 255)  # Green if scored, red if not
-            cv2.circle(frame, pt, POINT_RADIUS, color, 3)
-    
-    def check_points(self, feet):
-        for i, pt in enumerate(FLOOR_POINTS):
+    def generate_initial_stones(self):
+        """Generate stones within reachable distance from left/right start."""
+        start_x = 200
+        y = 400  # placeholder, will be updated dynamically to match ankle height
+        self.stones = [(start_x + i * MAX_X_DISTANCE, y) for i in range(self.points_to_win)]
+        self.visited = [False] * len(self.stones)
+
+    def update_stone_y(self, ankle_y):
+        """Align all stones on same y-axis as the player's ankles."""
+        self.stones = [(x, ankle_y) for x, _ in self.stones]
+
+    def draw_stones(self, frame):
+        """Draw only the next stone the player needs to step on"""
+        try:
+            next_index = self.visited.index(False)  # first unvisited stone
+            x, y = self.stones[next_index]
+            cv2.circle(frame, (x, y), POINT_RADIUS, (0, 0, 255), 3)
+        except ValueError:
+            # All stones visited
+            pass
+
+
+    def feet_positions(self, keypoints):
+        if keypoints.shape[0] <= 16:
+            return None
+        left_ankle = keypoints[15][:2]
+        right_ankle = keypoints[16][:2]
+        return [tuple(map(int, left_ankle)), tuple(map(int, right_ankle))]
+
+    def check_stones(self, feet):
+        for i, (stone_x, stone_y) in enumerate(self.stones):
             if not self.visited[i]:
-                for foot in feet:
-                    if np.linalg.norm(np.array(foot) - np.array(pt)) < POINT_RADIUS:
+                for foot_x, foot_y in feet:
+                    # threshold distance for scoring
+                    if abs(foot_x - stone_x) < POINT_RADIUS and abs(foot_y - stone_y) < POINT_RADIUS:
                         self.visited[i] = True
                         self.score += 1
                         print(f"Scored! Total: {self.score}")
@@ -32,16 +56,7 @@ class RiverCrossingGame:
                             self.game_over = True
                         break
 
-    def feet_positions(self, keypoints):
-        """Return left and right ankle positions if detected, else None."""
-        if keypoints.shape[0] <= 16:  # not enough keypoints detected
-            return None
-        left_ankle = keypoints[15][:2]
-        right_ankle = keypoints[16][:2]
-        return [tuple(map(int, left_ankle)), tuple(map(int, right_ankle))]
-
     def update(self, keypoints_list):
-        """Update game state with a list of keypoints."""
         if self.game_over or keypoints_list is None:
             return
 
@@ -49,4 +64,26 @@ class RiverCrossingGame:
             feet = self.feet_positions(kp)
             if feet is None:
                 continue
-            self.check_points(feet)
+            avg_ankle_y = sum(f[1] for f in feet) // len(feet)
+            # update the stone's y-coordinate to match player's ankle
+            next_index = self.visited.index(False)
+            x, _ = self.stones[next_index]
+            self.stones[next_index] = (x, avg_ankle_y)
+            self.check_stones(feet)
+
+    def update_stone_y(self, ankle_y):
+        try:
+            next_index = self.visited.index(False)
+            x, _ = self.stones[next_index]
+            self.stones[next_index] = (x, ankle_y)
+        except ValueError:
+            pass
+
+    def draw_stone_on_surface(self, surface, offset=(0,0)):
+        try:
+            next_index = self.visited.index(False)
+            x, y = self.stones[next_index]
+            ox, oy = offset
+            pygame.draw.circle(surface, (0,0,255), (x+ox, y+oy), POINT_RADIUS, 3)
+        except ValueError:
+            pass
