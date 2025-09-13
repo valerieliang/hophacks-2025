@@ -40,7 +40,7 @@ class TreePoseLogic:
         # Extract positions
         left_knee_y = keypoints['left_knee'][1]
         right_knee_y = keypoints['right_knee'][1]
-        left_ankle_y = keypoints['left_ankle'][1]
+        left_ankle_y = keypoints['left_ankle'][1] # ankles
         right_ankle_y = keypoints['right_ankle'][1]
 
         # Determine which leg is lifted using ankle height
