@@ -1,35 +1,28 @@
 import pygame
 
 class Button:
-    def __init__(self, screen, text="", font=None, font_size=48,
-                 text_color=(255,255,255), bg_color=(0,0,0),
-                 image=None, pos=(0,0), size=None):
+    def __init__(self, screen, image=None, pos=(0,0), size=None, text=""):
         self.screen = screen
-        self.text = text
-        self.font = pygame.font.Font(font, font_size) if text else None
-        self.text_color = text_color
-        self.bg_color = bg_color
         self.image = None
-
         if image:
-            loaded = pygame.image.load(image).convert_alpha()
+            self.image = pygame.image.load(image).convert_alpha()
             if size:
-                loaded = pygame.transform.smoothscale(loaded, size)
-            self.image = loaded
+                self.image = pygame.transform.scale(self.image, size)
             self.rect = self.image.get_rect(center=pos)
         else:
-            self.image = pygame.Surface(size)
-            self.image.fill(bg_color)
-            self.rect = self.image.get_rect(center=pos)
-
-            if text:
-                text_surface = self.font.render(text, True, text_color)
-                text_rect = text_surface.get_rect(center=self.rect.center)
-                self.image.blit(text_surface, (self.rect.width//2 - text_rect.width//2,
-                                               self.rect.height//2 - text_rect.height//2))
+            self.font = pygame.font.SysFont("Arial", 32)
+            self.text = text
+            self.rect = pygame.Rect(0, 0, size[0], size[1])
+            self.rect.center = pos
 
     def draw(self):
-        self.screen.blit(self.image, self.rect)
+        if self.image:
+            self.screen.blit(self.image, self.rect)
+        else:
+            pygame.draw.rect(self.screen, (50, 150, 50), self.rect, border_radius=12)
+            text_surface = self.font.render(self.text, True, (255, 255, 255))
+            text_rect = text_surface.get_rect(center=self.rect.center)
+            self.screen.blit(text_surface, text_rect)
 
     def is_clicked(self, mouse_pos):
         return self.rect.collidepoint(mouse_pos)
