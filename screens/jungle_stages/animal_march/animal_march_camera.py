@@ -42,20 +42,18 @@ class AnimalMarchCamera:
                 self.screen.blit(frame_surface, (0, 0))
                 if keypoints is not None:
                     self.game_logic.process_keypoints(keypoints)
-
         elif not self.camera_on:
-            # Paused
             pause_font = dynapuff(80)
             pause_text = pause_font.render("Paused", True, (255, 255, 255))
             pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
-                                                     self.screen.get_height() // 2))
+                                                    self.screen.get_height() // 2))
             self.screen.blit(pause_text, pause_rect)
 
-        # Fruits
+        # Update & draw fruits
         self.game_logic.update_fruits()
         self.game_logic.draw_fruits()
 
-        # Score
+        # Draw score
         score_text = self.font.render(f"Score: {self.game_logic.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (20, self.screen.get_height() - 50))
 
@@ -65,14 +63,24 @@ class AnimalMarchCamera:
 
         pygame.display.flip()
 
+        # Automatically go to next screen if game over
+        if self.game_logic.game_over:
+            if self.cap and self.cap.isOpened():
+                self.cap.release()
+            return self.game_logic.get_next_screen()
+
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.back_button.is_clicked(mouse_pos):
-                if self.cap:
+                if self.cap and self.cap.isOpened():
                     self.cap.release()
+                    cv2.destroyAllWindows()  # just in case
                 return "animal_march_intro"
             if self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
+                # immediately release camera if turning off
+                if not self.camera_on and self.cap and self.cap.isOpened():
+                    self.cap.release()
         return None
 
     def get_next_screen(self):
