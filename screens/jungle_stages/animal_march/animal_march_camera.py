@@ -7,6 +7,23 @@ from ui.back_button import BackButton
 from ui.camera_toggle import CameraToggleButton
 import time
 from assets.fonts import dynapuff
+import random
+
+FRUIT_SIZE = (100, 100)
+FRUIT_FOLDER = "assets/fruits/"
+
+class FallingFruit:
+    def __init__(self, image, x, y=0, speed=5):
+        self.image = image
+        self.x = x
+        self.y = y
+        self.speed = speed
+
+    def update(self):
+        self.y += self.speed
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.x, self.y))
 
 class AnimalMarchCamera:
     def __init__(self, screen):
@@ -30,7 +47,7 @@ class AnimalMarchCamera:
         self.knee_history_len = 5
         self.left_knee_history = deque(maxlen=self.knee_history_len)
         self.right_knee_history = deque(maxlen=self.knee_history_len)
-        self.threshold = 30  # distance from hip to count as "up"
+        self.threshold = 20  # distance from hip to count as "up"
 
         # Game over flag
         self.game_over = False
@@ -70,19 +87,37 @@ class AnimalMarchCamera:
                             if knee_up and not self.knee_was_up and self.score < self.max_score:
                                 self.score += 1
                                 self.knee_was_up = True
-                                # Immediate update
+                                # Spawn a random fruit at random x position
+                                fruit_img = random.choice(self.fruits_images)
+                                x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
+                                self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
+                                # Immediate score update
                                 self.update_score_display()
                                 if self.score >= self.max_score:
                                     self.game_over = True
-                                    print("You win!")
+                                    # Display "You Win!" in big letters
+                                    win_font = dynapuff(80)
+                                    win_text = win_font.render("You Win!", True, (255, 255, 0))
+                                    win_rect = win_text.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height() // 2))
+                                    self.screen.blit(win_text, win_rect)
+                                    pygame.display.update(win_rect)
                             elif not knee_up:
                                 self.knee_was_up = False
 
-                        # Debug
+                        """
+                        Debug
                         print(f"Left knee: {left_knee_avg:.1f}, Right knee: {right_knee_avg:.1f}, "
                               f"Knee up: {knee_up}, Score: {self.score}")
+                        """
 
-        # Display score (always white)
+        # Update and draw falling fruits
+        for fruit in self.falling_fruits[:]:
+            fruit.update()
+            fruit.draw(self.screen)
+            if fruit.y > self.screen.get_height():
+                self.falling_fruits.remove(fruit)
+
+        # Display score 
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (20, self.screen.get_height() - 50))
 
