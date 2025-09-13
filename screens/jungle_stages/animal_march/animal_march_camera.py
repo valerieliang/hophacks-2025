@@ -79,7 +79,7 @@ class AnimalMarchCamera:
         self.cap = None
 
     def draw(self):
-        self.screen.fill((0, 100, 0))
+        self.screen.fill((102, 204, 255))
 
         # --- Draw camera frame if active ---
         if self.camera_on and self.frame is not None and not self.game_logic.game_over:
