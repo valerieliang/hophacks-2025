@@ -13,7 +13,6 @@ movement_data = [
     (6, 70, 270),
     (7, 140, 340),
 ]
-
 def detect_steps(data):
     points = 0
     last_wrist_dir = 0
