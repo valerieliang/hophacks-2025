@@ -6,7 +6,7 @@ class StageSelect:
     def __init__(self, screen):
         self.screen = screen
         w, h = screen.get_size()
-        self.back_button = Button(screen)
+        self.back_button = BackButton(screen)
         
         # Load background
         self.background = pygame.image.load("assets/stages_background.jpg").convert()
@@ -43,6 +43,7 @@ class StageSelect:
 
         # Jungle stage button
         self.screen.blit(self.jungle_button_img, self.jungle_button_rect)
+        self.back_button.draw()
 
         # Grey placeholders
         pygame.draw.rect(self.screen, self.placeholder_color, self.placeholder1_rect, border_radius=12)

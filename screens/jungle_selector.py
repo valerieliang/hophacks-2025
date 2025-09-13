@@ -34,6 +34,8 @@ class JungleSelector:
         for btn in self.stage_buttons:
             btn.draw()
 
+        self.back_button.draw()
+
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
             for btn in self.stage_buttons:

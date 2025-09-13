@@ -32,6 +32,7 @@ class JungleStage:
                 self.screen.blit(frame_surface, (x, y))
 
         self.toggle_button.draw()
+        self.back_button.draw()
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:

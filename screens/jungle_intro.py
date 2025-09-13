@@ -1,5 +1,6 @@
 import pygame
 from ui.buttons import Button
+from ui.back_button import BackButton
 
 ICON_DIM = 500
 
@@ -9,7 +10,7 @@ class JungleIntro:
         w, h = screen.get_size()
         self.title_font = pygame.font.SysFont("Arial", 72, bold=True)
         self.desc_font = pygame.font.SysFont("Arial", 28)
-        self.back_button = Button(screen)
+        self.back_button = BackButton(screen)
 
         # Load stage icon
         self.icon = pygame.image.load("assets/jungle_adventure_icon.png").convert_alpha()
@@ -43,6 +44,7 @@ class JungleIntro:
             self.screen.blit(text, text.get_rect(center=(self.screen.get_width() // 2, 500 + i * 40)))
 
         self.start_button.draw()
+        self.back_button.draw()
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
