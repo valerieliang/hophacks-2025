@@ -3,14 +3,16 @@ from ui.buttons import Button
 from ui.back_button import BackButton
 from ui.desc_font import DescFont
 from assets.fonts import dynapuff
+import os
 
 class AnimalMarchIntro:
     def __init__(self, screen):
         self.screen = screen
         w, h = screen.get_size()
 
-        # Title font for kids
-        self.title_font = dynapuff(64, bold=True) 
+        # Load title image
+        self.title_image = pygame.image.load(os.path.join("assets", "animal_march.png")).convert_alpha()
+        self.title_rect = self.title_image.get_rect(midtop=(w // 2, -25))
 
         # Description fonts
         self.game_lines = DescFont(screen, size=24, bold=False, color=(255, 255, 255), margin=50)
@@ -21,8 +23,8 @@ class AnimalMarchIntro:
         self.start_button = Button(
             screen,
             image=None,
-            pos=(w // 2, h - 100),
-            size=(width, 80),
+            pos=(w // 2, h - 80),
+            size=(width, 60),
             text="Start Exercise"
         )
 
@@ -32,29 +34,30 @@ class AnimalMarchIntro:
     def draw(self):
         self.screen.fill((102, 204, 255))  # bright, fun blue background
 
-        # Kid-friendly title / intro
-        title_text = "Animal March"
-        title_surf = self.title_font.render(title_text, True, (255, 255, 0))
-        self.screen.blit(title_surf, title_surf.get_rect(center=(self.screen.get_width()//2, 150)))
+        # Draw title image
+        self.screen.blit(self.title_image, self.title_rect)
 
         # Exciting game description for kids
         game_text = ("March like an elephant through the jungle! Each high knee stomp shakes the trees "
                      "and makes fruit fall! Collect points for every fruit you get!")
 
         # Start y-coordinate below the title
-        y_start = 250
+        y_start = self.title_rect.bottom - 25
         self.game_lines.render_text(game_text, y_start)
 
         # Parent PT goals (smaller font)
-        pt_text = ("PT Goal: Gross motor coordination, rhythm, bilateral movement. "
-                   "Exercise: March in place, lifting knees high, swinging arms.")
+        pt_text_1 = "PT Goal: Gross motor coordination, rhythm, bilateral movement."
+        pt_text_2 = "Exercise: March in place, lifting knees high, swinging arms."
 
-        y_start += 120  # space between kid description and parent info
-        self.parent_lines.render_text(pt_text, y_start)
+        y_start += 110  # space between kid description and parent info
+        self.parent_lines.render_text(pt_text_1, y_start)
+        self.parent_lines.render_text(pt_text_2, y_start + 30)
 
         # Draw buttons
         self.start_button.draw()
         self.back_button.draw()
+
+    
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
