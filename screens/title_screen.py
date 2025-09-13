@@ -11,14 +11,15 @@ class TitleScreen:
 
         # Load logo
         self.logo = pygame.image.load("assets/logo.png").convert_alpha()
-        logo_w = int(w * 0.7)  # scale to ~70% of screen width
+        logo_w = int(w * 0.75)  # scale to ~75% of screen width
         logo_h = int(self.logo.get_height() * (logo_w / self.logo.get_width()))
         self.logo = pygame.transform.scale(self.logo, (logo_w, logo_h))
         self.logo_rect = self.logo.get_rect(center=(w // 2, h // 2 - 100))
 
         # Load start button
         self.start_button = pygame.image.load("assets/start_game.png").convert_alpha()
-        button_w, button_h = 300, 120  # fixed button size
+        button_w = int(w * 0.5)
+        button_h = int(self.start_button.get_height() * (button_w / self.start_button.get_width()))
         self.start_button = pygame.transform.scale(self.start_button, (button_w, button_h))
         self.start_button_rect = self.start_button.get_rect(center=(w // 2, h // 2 + 200))
 
