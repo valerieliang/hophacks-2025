@@ -14,7 +14,7 @@ class RiverCrossingGame:
         self.model = YOLO('yolov8n-pose.pt')
         self.cap = cv2.VideoCapture(0)
         self.score = 0
-        self.visited = [False] * len(self.FLOOR_POINTS)
+        self.visited = [False] * len(FLOOR_POINTS)
 
     def feet_positions(self, keypoints):
         # COCO format: 15 = left ankle, 16 = right ankle
@@ -23,17 +23,17 @@ class RiverCrossingGame:
         return [tuple(map(int, left_ankle)), tuple(map(int, right_ankle))]
 
     def check_points(self, feet):
-        for i, pt in enumerate(self.FLOOR_POINTS):
+        for i, pt in enumerate(FLOOR_POINTS):
             if not self.visited[i]:
                 for foot in feet:
-                    if np.linalg.norm(np.array(foot) - np.array(pt)) < self.POINT_RADIUS:
+                    if np.linalg.norm(np.array(foot) - np.array(pt)) < POINT_RADIUS:
                         self.visited[i] = True
                         self.score += 1
                         print(f"Scored! Total: {self.score}")
                         break
 
     def draw_overlay(self, frame):
-        for i, pt in enumerate(self.FLOOR_POINTS):
+        for i, pt in enumerate(FLOOR_POINTS):
             color = (0, 255, 0) if self.visited[i] else (0, 0, 255)
             cv2.circle(frame, pt, self.POINT_RADIUS, color, 2)
         cv2.putText(frame, f"Score: {self.score}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
@@ -53,10 +53,10 @@ class RiverCrossingGame:
             self.draw_overlay(frame)
             cv2.imshow("River Crossing Minigame", frame)
 
-            if self.score >= self.POINTS_TO_WIN:
+            if self.score >= POINTS_TO_WIN:
                 cv2.putText(frame, "Minigame Complete!", (100, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,255,0), 4)
                 cv2.imshow("River Crossing Minigame", frame)
-                cv2.waitKey(self.RETURN_TO_SELECTOR_DELAY * 1000)
+                cv2.waitKey(RETURN_TO_SELECTOR_DELAY * 1000)
                 print("Returning to jungle selector screen...")
                 break
 

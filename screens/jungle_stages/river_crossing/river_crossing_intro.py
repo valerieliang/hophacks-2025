@@ -35,6 +35,7 @@ class RiverCrossingIntro:
         self.screen.fill((102, 204, 255))  # bright, fun blue background
 
         # Draw title image 
+        self.screen.blit(self.title_image, self.title_rect)
 
         # Exciting game description for kids
         game_text = ("Step across stones to cross a river. Miss a step, you splash! " 
@@ -48,9 +49,9 @@ class RiverCrossingIntro:
         pt_text_1 = "PT Goal: Weight shifting, gait coordination, balance in motion. "
         pt_text_2 = "Exercise: Step side to side onto marked floor spots."
         
-        y_start += 110  # space between kid description and parent info
+        y_start += 100  # space between kid description and parent info
         self.parent_lines.render_text(pt_text_1, y_start) 
-        self.parent_lines.render_text(pt_text_2, y_start + 30)
+        self.parent_lines.render_text(pt_text_2, y_start + 20)
 
         # Draw buttons
         self.start_button.draw()

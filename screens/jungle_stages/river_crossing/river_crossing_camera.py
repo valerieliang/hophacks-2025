@@ -28,7 +28,7 @@ class RiverCrossingCamera:
         self._thread = None
 
         # Game logic 
-        self.game_logic = RiverCrossingGame(screen)
+        self.game_logic = RiverCrossingGame()
 
         # Win overlay image
         self.win_image = pygame.image.load("assets/jungle_winner.png").convert_alpha()
