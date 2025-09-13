@@ -25,6 +25,7 @@ screens = {
     "animal_march_intro": AnimalMarchIntro(screen),
     "animal_march_camera":AnimalMarchCamera(screen),
     "tree_pose_intro": TreePoseIntro(screen),  
+    "tree_pose_camera": TreePoseCamera(screen)
 }
 current_screen = "title"
 
