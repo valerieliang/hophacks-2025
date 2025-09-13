@@ -11,7 +11,8 @@ class RiverCrossingIntro:
         w, h = screen.get_size()
 
         # Title image
-        
+        self.title_image = pygame.image.load(os.path.join("assets", "river_crossing.png")).convert_alpha()
+        self.title_rect = self.title_image.get_rect(midtop=(w // 2, -25))
 
         # Description fonts
         self.game_lines = DescFont(screen, size=24, bold=False, color=(255, 255, 255), margin=50)
