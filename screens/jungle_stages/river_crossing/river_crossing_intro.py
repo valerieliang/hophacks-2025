@@ -49,7 +49,7 @@ class RiverCrossingIntro:
         pt_text_1 = "PT Goal: Weight shifting, gait coordination, balance in motion. "
         pt_text_2 = "Exercise: Step side to side onto marked floor spots."
         
-        y_start += 100  # space between kid description and parent info
+        y_start += 80  # space between kid description and parent info
         self.parent_lines.render_text(pt_text_1, y_start) 
         self.parent_lines.render_text(pt_text_2, y_start + 20)
 

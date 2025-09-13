@@ -48,7 +48,7 @@ class TreePoseIntro:
         pt_text_1 = "PT Goal: Static balance, core stability."
         pt_text_2 = "Exercise: Stand on one leg, switch sides after 10 sec."
 
-        y_start += 110  # space between kid description and parent info
+        y_start += 80  # space between kid description and parent info
         self.parent_lines.render_text(pt_text_1, y_start)
         self.parent_lines.render_text(pt_text_2, y_start + 30)
 
