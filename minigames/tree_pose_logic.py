@@ -1,7 +1,7 @@
 import time
 
 class TreePoseLogic:
-    def __init__(self, hold_time=10, knee_threshold=20, stability_threshold=10):
+    def __init__(self, hold_time=10, knee_threshold=10, stability_threshold=15):
         """
         hold_time: seconds the pose must be held to win
         knee_threshold: minimum y difference to consider a leg lifted
@@ -25,57 +25,61 @@ class TreePoseLogic:
 
     def update(self, keypoints):
         """
-        keypoints: dict with 'left_knee' and 'right_knee', each (x, y)
+        keypoints: dict with 'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+                   each as (x, y)
         Returns: seconds left if countdown active, None otherwise
         """
-        if 'left_knee' not in keypoints or 'right_knee' not in keypoints:
+        required_keys = ['left_knee', 'right_knee', 'left_ankle', 'right_ankle']
+        if not all(k in keypoints for k in required_keys):
             self.in_pose_start = None
             self.timer_start = None
             self.pose_achieved = False
             self.last_support_y = None
             return None
 
+        # Extract positions
         left_knee_y = keypoints['left_knee'][1]
         right_knee_y = keypoints['right_knee'][1]
+        left_ankle_y = keypoints['left_ankle'][1]
+        right_ankle_y = keypoints['right_ankle'][1]
 
-        # Determine which leg is lifted
-        if left_knee_y < right_knee_y - self.knee_threshold:
+        # Determine which leg is lifted using ankle height
+        lifted_leg = None
+        support_y = None
+        if left_ankle_y < right_knee_y - self.knee_threshold:
             lifted_leg = 'left'
             support_y = right_knee_y
-        elif right_knee_y < left_knee_y - self.knee_threshold:
+        elif right_ankle_y < left_knee_y - self.knee_threshold:
             lifted_leg = 'right'
             support_y = left_knee_y
-        else:
-            lifted_leg = None
-            support_y = None
 
         if lifted_leg:
-            # Check if supporting leg is stable
+            # Check stability of supporting leg
             if self.last_support_y is None:
                 self.last_support_y = support_y
-                self.in_pose_start = time.time()  # start buffer
+                self.in_pose_start = time.time()
                 return None
 
             if abs(support_y - self.last_support_y) <= self.stability_threshold:
                 # Supporting leg is stable
-                if not self.timer_start and time.time() - self.in_pose_start >= 2:
+                if not self.timer_start and time.time() - self.in_pose_start >= 1.5:
                     self.timer_start = time.time()
                     self.pose_achieved = True
             else:
-                # Supporting leg moved too much, reset
+                # Supporting leg moved too much, reset buffer
                 self.in_pose_start = time.time()
                 self.timer_start = None
                 self.pose_achieved = False
 
             self.last_support_y = support_y
         else:
-            # Not standing on one leg, reset
+            # Not in pose, reset
             self.in_pose_start = None
             self.timer_start = None
             self.pose_achieved = False
             self.last_support_y = None
 
-        # Update countdown
+        # Countdown logic
         if self.timer_start:
             elapsed = time.time() - self.timer_start
             if elapsed >= self.hold_time:
