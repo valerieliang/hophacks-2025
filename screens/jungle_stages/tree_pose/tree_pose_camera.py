@@ -20,8 +20,7 @@ class TreePoseCamera:
         self.camera_on = True
 
         # Threading
-        self.frame_surface = None
-        self.frame_offset = (0, 0)
+        self.frame = None
         self.keypoints = None
         self._stop_thread = False
         self._thread = None
@@ -42,69 +41,85 @@ class TreePoseCamera:
             size=(300, 80)
         )
 
+    # -------------------- Camera Thread --------------------
+    def start_camera_thread(self):
+        if self._thread and self._thread.is_alive():
+            return
+        self.cap = cv2.VideoCapture(0)
+        self._stop_thread = False
+        self._thread = threading.Thread(target=self._capture_loop, daemon=True)
+        self._thread.start()
+
+    def _capture_loop(self):
+        while not self._stop_thread:
+            if self.camera_on and self.cap.isOpened():
+                ret, frame = self.cap.read()
+                if ret:
+                    self.frame, _, self.keypoints = self.camera_manager.process_frame(frame)
+            time.sleep(0.01)  # small delay
+
+    def stop_camera_thread(self):
+        self._stop_thread = True
+        if self.cap and self.cap.isOpened():
+            self.cap.release()
+        self.cap = None
+
+    # -------------------- Draw --------------------
     def draw(self):
         # Always fill background
         self.screen.fill((102, 204, 255))
 
-        # Draw camera frame if available
-        if self.camera_on and self.frame_surface:
-            self.screen.blit(self.frame_surface, self.frame_offset)
+        # Draw camera frame if active
+        if self.camera_on and self.frame is not None and not self.game_logic.game_over:
+            self.screen.blit(self.frame, (0, 0))
+            if self.keypoints is not None:
+                self.game_logic.update(self.keypoints)
 
-        # Draw buttons
+        # If camera is off and game not over, show "Paused"
+        elif not self.camera_on and not self.game_logic.game_over:
+            pause_font = dynapuff(80)
+            pause_text = pause_font.render("Paused", True, (255, 255, 255))
+            pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
+                                                     self.screen.get_height() // 2))
+            self.screen.blit(pause_text, pause_rect)
+
+        # Draw countdown timer if pose detected
+        if self.game_logic.pose_achieved and not self.game_logic.game_over:
+            seconds_left = self.game_logic.update(self.keypoints)
+            if seconds_left is not None:
+                timer_text = self.font.render(f"Hold: {int(seconds_left)}s", True, (255, 0, 0))
+                timer_rect = timer_text.get_rect(center=(self.screen.get_width() // 2, 100))
+                self.screen.blit(timer_text, timer_rect)
+
+        # Buttons
         self.back_button.draw()
         if not self.game_logic.game_over:
             self.camera_button.draw()
 
-        # Draw countdown timer if pose detected and not yet completed
-        if self.game_logic.pose_achieved and not self.game_logic.game_over:
-            seconds_left = self.game_logic.update(self.keypoints)
-            if seconds_left is not None:
-                text_surf = self.font.render(f"Hold: {int(seconds_left)}s", True, (255, 0, 0))
-                rect = text_surf.get_rect(center=(self.screen.get_width() // 2, 100))
-                self.screen.blit(text_surf, rect)
-
-        # Draw win overlay if game is completed
+        # Win overlay and menu button
         if self.game_logic.game_over:
             self.screen.blit(self.win_image, (0, 0))
             self.menu_button.draw()
 
+        pygame.display.flip()
+
+    # -------------------- Event Handling --------------------
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.back_button.is_clicked(mouse_pos):
                 self.stop_camera_thread()
                 return "tree_pose_intro"
 
-            # Camera toggle only if game is not over
+            # Camera toggle (start/stop)
             if not self.game_logic.game_over and self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
+                if self.camera_on:
+                    # Only start camera thread if turned on
+                    self.start_camera_thread()
+
+            # Back to menu button after game over
+            if self.game_logic.game_over and self.menu_button.is_clicked(mouse_pos):
+                self.stop_camera_thread()
+                return "jungle_selector"
 
         return None
-
-    def start_camera_thread(self):
-        if self.cap is None:
-            self.cap = cv2.VideoCapture(0)
-        self._stop_thread = False
-        self._thread = threading.Thread(target=self.camera_loop, daemon=True)
-        self._thread.start()
-
-    def stop_camera_thread(self):
-        self._stop_thread = True
-        if self._thread and self._thread.is_alive():
-            self._thread.join()
-        if self.cap:
-            self.cap.release()
-            self.cap = None
-
-    def camera_loop(self):
-        while not self._stop_thread and self.cap.isOpened():
-            # Get processed frame and keypoints from CameraManager
-            frame_surface, offset, keypoints = self.camera_manager.get_frame_surface(self.cap)
-            if frame_surface is not None:
-                self.frame_surface = frame_surface
-                self.frame_offset = offset
-                self.keypoints = keypoints
-
-            # Update game logic
-            self.game_logic.update(self.keypoints)
-
-            time.sleep(0.03)
