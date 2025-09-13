@@ -5,6 +5,8 @@ from screens.jungle_stages.jungle_intro import JungleIntro
 from screens.jungle_stages.jungle_selector import JungleSelector
 from screens.jungle_stages.animal_march.animal_march_intro import AnimalMarchIntro
 from screens.jungle_stages.animal_march.animal_march_camera import AnimalMarchCamera
+from screens.jungle_stages.tree_pose.tree_pose_intro import TreePoseIntro
+from screens.jungle_stages.tree_pose.tree_pose_camera import TreePoseCamera
 from screens.jungle_stages.jungle_win import JungleWin
 
 pygame.init()
@@ -23,6 +25,7 @@ screens = {
     "jungle_selector": JungleSelector(screen),
     "animal_march_intro": AnimalMarchIntro(screen),
     "animal_march_camera":AnimalMarchCamera(screen),
+    "tree_pose_intro": TreePoseIntro(screen),  
     "jungle_win": JungleWin(screen)
 }
 current_screen = "title"
