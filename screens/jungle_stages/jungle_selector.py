@@ -34,9 +34,14 @@ class JungleSelector:
             text="Tree Pose Challenge"
         )
 
-        # place holders for other stages
-        self.placeholder1 = pygame.Rect(w//2 - button_width//2, start_y + 2*(button_height + button_spacing), button_width, button_height)
-        self.placeholder_color = (100, 100, 100)
+        self.river_crossing_button = Button(
+            screen,
+            image=None,
+            pos=(w // 2, start_y + 2 * (button_height + button_spacing)),
+            size=(button_width, button_height),
+            text="River Crossing"
+        )
+
         
     def draw(self):
         self.screen.fill((60, 120, 60))
@@ -46,7 +51,7 @@ class JungleSelector:
         # draw buttons
         self.animal_march_button.draw()
         self.tree_pose_button.draw()
-        pygame.draw.rect(self.screen, self.placeholder_color, self.placeholder1, border_radius=12)
+        self.river_crossing_button.draw()
         
         self.back_button.draw()
 
@@ -58,4 +63,6 @@ class JungleSelector:
                 return "animal_march_intro"
             if self.tree_pose_button.is_clicked(mouse_pos):
                 return "tree_pose_intro"
+            if self.river_crossing_button.is_clicked(mouse_pos):
+                return "river_crossing_intro"
         return None
