@@ -54,11 +54,17 @@ class RiverCrossingCamera:
 
     def _capture_loop(self):
         while not self._stop_thread:
-            if self.camera_on and self.cap.isOpened():
+            if self.camera_on and self.cap is not None and self.cap.isOpened():
                 ret, frame = self.cap.read()
-                if ret:
-                    self.frame, _, self.keypoints = self.camera_manager.process_frame(frame)
-            time.sleep(0.01)  # small delay
+                if ret and frame is not None:
+                    try:
+                        processed_frame, _, keypoints = self.camera_manager.process_frame(frame)
+                        # Update shared variables safely
+                        self.frame = processed_frame
+                        self.keypoints = keypoints
+                    except Exception as e:
+                        print(f"Error processing frame: {e}")
+            time.sleep(0.01)  # small delay to prevent 100% CPU usage
 
     def stop_camera_thread(self):
         self._stop_thread = True
@@ -86,8 +92,8 @@ class RiverCrossingCamera:
 
         # print current score in the bottom right of the screen
         score_text = self.font.render(f"Score: {self.game_logic.score}", True, (255, 255, 255))
-        score_rect = score_text.get_rect(bottomright=(self.screen.get_width() - 20,
-                                                      self.screen.get_height() - 20))
+        score_rect = score_text.get_rect(bottomright=(self.screen.get_width() - 20, self.screen.get_height() - 20))
+        self.screen.blit(score_text, score_rect)
 
         # Buttons
         self.back_button.draw()

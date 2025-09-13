@@ -1,19 +1,25 @@
 import cv2
 import numpy as np
 from ultralytics import YOLO
+import cv2
 
-POINTS_TO_WIN = 5
-FLOOR_POINTS = [(200, 400), (440, 400)]
 POINT_RADIUS = 50
+FLOOR_POINTS = [(200, 400), (440, 400)]
 
 class RiverCrossingGame:
-    def __init__(self, points_to_win=POINTS_TO_WIN):
+    def __init__(self, points_to_win=5):
         self.model = YOLO('yolov8n-pose.pt')
         self.score = 0
         self.visited = [False] * len(FLOOR_POINTS)
         self.game_over = False
         self.points_to_win = points_to_win
 
+    def draw_points(self, frame):
+        """Draw floor points on the frame."""
+        for i, pt in enumerate(FLOOR_POINTS):
+            color = (0, 255, 0) if self.visited[i] else (0, 0, 255)  # Green if scored, red if not
+            cv2.circle(frame, pt, POINT_RADIUS, color, 3)
+    
     def check_points(self, feet):
         for i, pt in enumerate(FLOOR_POINTS):
             if not self.visited[i]:
@@ -35,15 +41,12 @@ class RiverCrossingGame:
         return [tuple(map(int, left_ankle)), tuple(map(int, right_ankle))]
 
     def update(self, keypoints_list):
-        """
-        Update game state with a list of keypoints (from YOLO detections).
-        Skips if keypoints are missing.
-        """
+        """Update game state with a list of keypoints."""
         if self.game_over or keypoints_list is None:
             return
 
         for kp in keypoints_list:
             feet = self.feet_positions(kp)
             if feet is None:
-                continue  # Skip if person is partially out of frame
+                continue
             self.check_points(feet)
