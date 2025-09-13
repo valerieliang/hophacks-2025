@@ -9,6 +9,7 @@ class JungleIntro:
         w, h = screen.get_size()
         self.title_font = pygame.font.SysFont("Arial", 72, bold=True)
         self.desc_font = pygame.font.SysFont("Arial", 28)
+        self.back_button = Button(screen)
 
         # Load stage icon
         self.icon = pygame.image.load("assets/jungle_adventure_icon.png").convert_alpha()

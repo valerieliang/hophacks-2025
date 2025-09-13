@@ -7,7 +7,7 @@ class JungleSelector:
         self.screen = screen
         self.font = pygame.font.SysFont("Arial", 36, bold=True)
         self.small_font = pygame.font.SysFont("Arial", 24)
-        self.back_button = BackButton(screen, pos=(60, 60))
+        self.back_button = BackButton(screen)
 
         w, h = screen.get_size()
         self.stage_buttons = []

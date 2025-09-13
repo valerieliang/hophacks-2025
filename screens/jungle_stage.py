@@ -10,7 +10,7 @@ class JungleStage:
         self.camera_on = False
         self.cap = None
         self.camera_manager = CameraManager(screen)
-        self.back_button = BackButton(screen, pos=(60, 60))
+        self.back_button = BackButton(screen)
 
         w, h = screen.get_size()
         self.toggle_button = Button(

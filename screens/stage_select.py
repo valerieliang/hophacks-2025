@@ -6,7 +6,7 @@ class StageSelect:
     def __init__(self, screen):
         self.screen = screen
         w, h = screen.get_size()
-        self.back_button = BackButton(screen, pos=(60, 60))
+        self.back_button = Button(screen)
         
         # Load background
         self.background = pygame.image.load("assets/stages_background.jpg").convert()
