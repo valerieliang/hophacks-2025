@@ -6,7 +6,7 @@ from assets.fonts import dynapuff
 
 FRUIT_SIZE = (100, 100)
 FRUIT_FOLDER = "assets/fruits/"
-MAX_SCORE = 5
+MAX_SCORE = 20
 
 class FallingFruit:
     def __init__(self, image, x, y=0, speed=None):

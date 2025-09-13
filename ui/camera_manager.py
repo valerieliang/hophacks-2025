@@ -9,10 +9,10 @@ class CameraManager:
         self.screen_w, self.screen_h = screen.get_size()
         self.pose_estimator = PoseEstimator()  # 🔑 load pose model once
 
-    def get_frame_surface(self, cap):
-        ret, frame = cap.read()
-        if not ret:
-            return None
+    def process_frame(self, frame):
+        """Convert an OpenCV frame into a pygame surface + keypoints."""
+        if frame is None:
+            return None, None, None
 
         # Run pose detection
         annotated_frame, keypoints = self.pose_estimator.detect(frame)
@@ -32,4 +32,12 @@ class CameraManager:
 
         # Convert to PyGame surface
         surface = pygame.surfarray.make_surface(np.rot90(frame_resized))
+
         return surface, (x_offset, y_offset), keypoints
+
+    def get_frame_surface(self, cap):
+        # Legacy method: capture frame directly from VideoCapture
+        ret, frame = cap.read()
+        if not ret:
+            return None, None, None
+        return self.process_frame(frame)
