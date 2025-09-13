@@ -31,9 +31,9 @@ class AnimalMarchCamera:
 
         # Load fruits
         self.fruits_images = []
-        for file in os.listdir("assets/fruits/"):
+        for file in os.listdir(FRUIT_FOLDER):
             if file.endswith(".png"):
-                img = pygame.image.load(os.path.join("assets/fruits/", file)).convert_alpha()
+                img = pygame.image.load(os.path.join(FRUIT_FOLDER, file)).convert_alpha()
                 img = pygame.transform.smoothscale(img, FRUIT_SIZE)
                 self.fruits_images.append(img)
 

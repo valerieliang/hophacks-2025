@@ -1,14 +1,13 @@
 # screens/jungle_win.py
 import pygame
 from ui.buttons import Button
-from assets.fonts import dynapuff
 
 class JungleWin:
     def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.SysFont("Comic Sans MS", 80, bold=True)  # cute big letters
-        self.small_font = dynapuff(40)
-        self.back_button = Button(screen, text="Back to Jungle Selector", pos=(screen.get_width() // 2, screen.get_height() - 100), size=(400, 70))
+        self.small_font = pygame.font.SysFont("Arial", 36)
+        self.back_button = Button(screen, text="Back to Jungle Selector", pos=(screen.get_width() // 2, screen.get_height() - 100))
 
     def draw(self):
         self.screen.fill((135, 206, 250))  # light blue background
