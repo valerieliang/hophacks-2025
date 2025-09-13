@@ -6,51 +6,30 @@ from pose_estimator import PoseEstimator
 class CameraManager:
     def __init__(self, screen):
         self.screen = screen
-        self.screen_width, self.screen_height = screen.get_size()
-        self.cap = None
-        self.pose_estimator = PoseEstimator()
+        self.screen_w, self.screen_h = screen.get_size()
+        self.pose_estimator = PoseEstimator()  # 🔑 load pose model once
 
-    def start_camera(self):
-        self.cap = cv2.VideoCapture(0)
-        ret, frame = self.cap.read()
-        if not ret:
-            self.cap.release()
-            raise RuntimeError("Failed to open camera")
-        return self.cap
-
-    def stop_camera(self):
-        if self.cap:
-            self.cap.release()
-            self.cap = None
-
-    def get_frame_surface(self):
-        # Returns the latest frame as a scaled/fitted PyGame surface
-        if not self.cap or not self.cap.isOpened():
-            return None
-
-        ret, frame = self.cap.read()
+    def get_frame_surface(self, cap):
+        ret, frame = cap.read()
         if not ret:
             return None
 
+        # Run pose detection
         annotated_frame, keypoints = self.pose_estimator.detect(frame)
-        frame_height, frame_width = annotated_frame.shape[:2]
 
-        # Aspect ratio scaling
-        screen_ratio = self.screen_width / self.screen_height
-        frame_ratio = frame_width / frame_height
+        # Mirror effect
+        annotated_frame = cv2.flip(annotated_frame, 1)
 
-        if frame_ratio > screen_ratio:
-            new_width = self.screen_width
-            new_height = int(self.screen_width / frame_ratio)
-        else:
-            new_height = self.screen_height
-            new_width = int(self.screen_height * frame_ratio)
+        # Keep aspect ratio
+        h, w, _ = annotated_frame.shape
+        scale = min(self.screen_w / w, self.screen_h / h)
+        new_w, new_h = int(w * scale), int(h * scale)
+        frame_resized = cv2.resize(annotated_frame, (new_w, new_h))
 
-        frame_resized = cv2.resize(annotated_frame, (new_width, new_height))
-        frame_resized = cv2.flip(frame_resized, 1)
+        # Center the frame
+        x_offset = (self.screen_w - new_w) // 2
+        y_offset = (self.screen_h - new_h) // 2
 
+        # Convert to PyGame surface
         surface = pygame.surfarray.make_surface(np.rot90(frame_resized))
-        x_offset = (self.screen_width - new_width) // 2
-        y_offset = (self.screen_height - new_height) // 2
-
-        return surface, x_offset, y_offset
+        return surface, (x_offset, y_offset), keypoints

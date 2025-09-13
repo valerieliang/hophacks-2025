@@ -1,64 +1,50 @@
 import pygame
 import sys
-import numpy as np
-import cv2
-from pose_estimator import PoseEstimator
-from ui.frame_manager import init_camera_and_window
-from ui.camera_toggle import CameraToggleButton
-from ui.camera_manager import CameraManager
-
+from ui.screens import TitleScreen, StageSelectScreen
+from ui.jungle_stage import JungleStage
 
 pygame.init()
-
-# detect screen size for normal windowed mode
 info = pygame.display.Info()
-screen_width, screen_height = info.current_w - 50, info.current_h - 100
-# square window
-screen = pygame.display.set_mode((screen_height, screen_height))
-
-WHITE = (255, 255, 255)
+screen = pygame.display.set_mode((info.current_w - 50, info.current_h - 100))
 clock = pygame.time.Clock()
 
-pose_estimator = PoseEstimator()
+# Screens
+title_screen = TitleScreen(screen)
+stage_select = StageSelectScreen(screen)
+jungle_stage = JungleStage(screen)
 
-# camera variables
-camera_on = False
-cap = None
-toggle_button = CameraToggleButton(screen)
-camera_manager = CameraManager(screen)
-
+current_screen = "title"
 running = True
-while running:
-    screen.fill(WHITE)
-    mouse_pos = pygame.mouse.get_pos()
 
-    # event handling
+while running:
+    mouse_pos = pygame.mouse.get_pos()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-        elif event.type == pygame.MOUSEBUTTONDOWN:
-            if toggle_button.is_clicked(mouse_pos):
-                if not camera_on:
-                    camera_manager.start_camera()
-                    camera_on = True
-                else:
-                    camera_manager.stop_camera()
-                    camera_on = False
-    # camera frame
-    if camera_on:
-        result = camera_manager.get_frame_surface()
-        if result:
-            frame_surface, x_offset, y_offset = result
-            screen.blit(frame_surface, (x_offset, y_offset))
 
-    # draw camera toggle button on top
-    toggle_button.draw()
+        if current_screen == "title":
+            result = title_screen.handle_event(event, mouse_pos)
+            if result == "stage_select":
+                current_screen = "stage_select"
+
+        elif current_screen == "stage_select":
+            result = stage_select.handle_event(event, mouse_pos)
+            if result == "stage_1":  # jungle
+                current_screen = "jungle_stage"
+
+        elif current_screen == "jungle_stage":
+            jungle_stage.handle_event(event, mouse_pos)
+
+    # Draw
+    if current_screen == "title":
+        title_screen.draw()
+    elif current_screen == "stage_select":
+        stage_select.draw()
+    elif current_screen == "jungle_stage":
+        jungle_stage.draw()
 
     pygame.display.update()
     clock.tick(30)
 
-# Cleanup
-if cap:
-    cap.release()
 pygame.quit()
 sys.exit()
