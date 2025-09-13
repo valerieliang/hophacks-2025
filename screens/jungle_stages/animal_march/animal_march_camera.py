@@ -89,7 +89,7 @@ class AnimalMarchCamera:
                 self.game_logic.process_keypoints(self.keypoints)
         elif not self.camera_on and not self.game_logic.game_over:
             pause_font = dynapuff(80)
-            pause_text = pause_font.render("Paused", True, (255, 255, 255))
+            pause_text = pause_font.render("Press Camera to Begin", True, (255, 255, 255))
             pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
                                                      self.screen.get_height() // 2))
             self.screen.blit(pause_text, pause_rect)
