@@ -37,24 +37,33 @@ class AnimalMarchCamera:
                 # Draw target circles
                 pygame.draw.circle(self.screen, (0, 200, 255), (left_target_x, floor_y), target_radius, 4)
                 pygame.draw.circle(self.screen, (255, 100, 0), (right_target_x, floor_y), target_radius, 4)
-                
                 frame_surface, offset, keypoints = self.camera_manager.get_frame_surface(self.cap)
                 if frame_surface:
                     self.screen.blit(frame_surface, (0, 0))
 
                     # dummy scoring logic: count stepping
                     try:
-                        left_knee_y = keypoints[13][1]
-                        right_knee_y = keypoints[14][1]
+                        left_ankle = keypoints[15]
+                        right_ankle = keypoints[16]
 
-                        # Detect leg alternation
-                        avg_knee_y = (left_knee_y + right_knee_y)/2
-                        if self.last_leg_state is None:
-                            self.last_leg_state = avg_knee_y
-                        else:
-                            if avg_knee_y < self.last_leg_state - 20:  # lifted up
-                                self.leg_score += 1
-                                self.last_leg_state = avg_knee_y
+                        # Check if left foot is near left target and right foot is near right target
+                        left_near_left = np.linalg.norm(np.array([left_ankle[0], left_ankle[1]]) - np.array([left_target_x, floor_y])) < target_radius
+                        right_near_right = np.linalg.norm(np.array([right_ankle[0], right_ankle[1]]) - np.array([right_target_x, floor_y])) < target_radius
+
+                        # Check if right foot is near right target and left foot is near left target (alternating)
+                        right_near_left = np.linalg.norm(np.array([right_ankle[0], right_ankle[1]]) - np.array([left_target_x, floor_y])) < target_radius
+                        left_near_right = np.linalg.norm(np.array([left_ankle[0], left_ankle[1]]) - np.array([right_target_x, floor_y])) < target_radius
+
+                        # Alternating step detection
+                        current_leg_state = None
+                        if left_near_left and not right_near_right:
+                            current_leg_state = "left"
+                        elif right_near_right and not left_near_left:
+                            current_leg_state = "right"
+
+                        if current_leg_state and current_leg_state != self.last_leg_state:
+                            self.leg_score += 1
+                            self.last_leg_state = current_leg_state
                     except:
                         pass
 
