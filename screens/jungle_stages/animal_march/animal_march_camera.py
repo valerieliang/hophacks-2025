@@ -8,16 +8,17 @@ from ui.camera_toggle import CameraToggleButton
 import time
 from assets.fonts import dynapuff
 import random
+import os
 
 FRUIT_SIZE = (100, 100)
 FRUIT_FOLDER = "assets/fruits/"
 
 class FallingFruit:
-    def __init__(self, image, x, y=0, speed=5):
+    def __init__(self, image, x, y=0, speed=None):
         self.image = image
         self.x = x
         self.y = y
-        self.speed = speed
+        self.speed = speed or random.randint(7, 12)  # faster and slightly varied
 
     def update(self):
         self.y += self.speed
@@ -25,13 +26,14 @@ class FallingFruit:
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
 
+
 class AnimalMarchCamera:
     def __init__(self, screen):
         self.screen = screen
         self.cap = cv2.VideoCapture(0)
         self.camera_manager = CameraManager(screen)
         self.back_button = BackButton(screen, pos=(60, 60))
-        self.font = dynapuff(40) 
+        self.font = dynapuff(40)
 
         # Camera toggle button
         self.camera_button = CameraToggleButton(screen, size=200)
@@ -51,6 +53,17 @@ class AnimalMarchCamera:
 
         # Game over flag
         self.game_over = False
+
+        # Load fruit images
+        self.fruits_images = []
+        for file in os.listdir(FRUIT_FOLDER):
+            if file.endswith(".png"):
+                img = pygame.image.load(os.path.join(FRUIT_FOLDER, file)).convert_alpha()
+                img = pygame.transform.smoothscale(img, FRUIT_SIZE)
+                self.fruits_images.append(img)
+
+        # Active falling fruits
+        self.falling_fruits = []
 
     def draw(self):
         self.screen.fill((0, 100, 0))  # jungle green background
@@ -91,24 +104,26 @@ class AnimalMarchCamera:
                                 fruit_img = random.choice(self.fruits_images)
                                 x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
                                 self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
-                                # Immediate score update
                                 self.update_score_display()
                                 if self.score >= self.max_score:
                                     self.game_over = True
                                     # Display "You Win!" in big letters
                                     win_font = dynapuff(80)
                                     win_text = win_font.render("You Win!", True, (255, 255, 0))
-                                    win_rect = win_text.get_rect(center=(self.screen.get_width() // 2, self.screen.get_height() // 2))
+                                    win_rect = win_text.get_rect(center=(self.screen.get_width() // 2,
+                                                                         self.screen.get_height() // 2))
                                     self.screen.blit(win_text, win_rect)
                                     pygame.display.update(win_rect)
                             elif not knee_up:
                                 self.knee_was_up = False
 
-                        """
-                        Debug
-                        print(f"Left knee: {left_knee_avg:.1f}, Right knee: {right_knee_avg:.1f}, "
-                              f"Knee up: {knee_up}, Score: {self.score}")
-                        """
+        elif not self.camera_on:
+            # Show Paused text in the middle
+            pause_font = dynapuff(80)
+            pause_text = pause_font.render("Paused", True, (255, 255, 255))
+            pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
+                                                     self.screen.get_height() // 2))
+            self.screen.blit(pause_text, pause_rect)
 
         # Update and draw falling fruits
         for fruit in self.falling_fruits[:]:
@@ -117,7 +132,7 @@ class AnimalMarchCamera:
             if fruit.y > self.screen.get_height():
                 self.falling_fruits.remove(fruit)
 
-        # Display score 
+        # Display score
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (20, self.screen.get_height() - 50))
 
@@ -128,7 +143,6 @@ class AnimalMarchCamera:
         pygame.display.flip()
 
     def update_score_display(self):
-        # Redraw score immediately
         score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (20, self.screen.get_height() - 50))
         pygame.display.update(pygame.Rect(20, self.screen.get_height() - 50, 200, 40))
