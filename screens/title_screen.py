@@ -23,5 +23,5 @@ class TitleScreen:
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN and self.play_button.is_clicked(mouse_pos):
-            return "jungle_intro"
+            return "stage_select"
         return None

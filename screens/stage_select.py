@@ -13,7 +13,7 @@ class StageSelect:
             image=None,
             pos=(w // 2, 200),
             size=(400, 100),
-            text="🌴 Jungle Adventure"
+            text="Jungle Adventure"
         )
 
         self.placeholder1 = Button(
