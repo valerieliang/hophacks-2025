@@ -1,10 +1,12 @@
 import pygame
 from ui.buttons import Button
+from ui.back_button import BackButton
 
 class StageSelect:
     def __init__(self, screen):
         self.screen = screen
         w, h = screen.get_size()
+        self.back_button = BackButton(screen, pos=(60, 60))
         
         # Load background
         self.background = pygame.image.load("assets/stages_background.jpg").convert()
@@ -32,7 +34,7 @@ class StageSelect:
         self.placeholder_color = (150, 150, 150)  # grey
 
         # Title font
-        self.font = pygame.font.SysFont("Arial", 48, bold=True)
+        self.font = pygame.font.SysFont("DynaPuff", 48, bold=True)
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -53,6 +55,8 @@ class StageSelect:
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.back_button.is_clicked(mouse_pos):
+                return "title"  # go back to previous screen
             if self.jungle_button_rect.collidepoint(mouse_pos):
-                return "jungle_intro"  # go to jungle intro
+                return "jungle_intro"
         return None

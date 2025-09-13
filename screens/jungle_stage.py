@@ -2,6 +2,7 @@ import pygame
 import cv2
 from ui.buttons import Button
 from ui.camera_manager import CameraManager
+from ui.back_button import BackButton
 
 class JungleStage:
     def __init__(self, screen):
@@ -9,6 +10,7 @@ class JungleStage:
         self.camera_on = False
         self.cap = None
         self.camera_manager = CameraManager(screen)
+        self.back_button = BackButton(screen, pos=(60, 60))
 
         w, h = screen.get_size()
         self.toggle_button = Button(
@@ -33,6 +35,8 @@ class JungleStage:
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.back_button.is_clicked(mouse_pos):
+                return "jungle_selector"  # go back to stage select
             if self.toggle_button.is_clicked(mouse_pos):
                 if self.camera_on:
                     if self.cap:

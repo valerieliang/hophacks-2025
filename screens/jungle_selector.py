@@ -1,11 +1,13 @@
 import pygame
 from ui.buttons import Button
+from ui.back_button import BackButton
 
 class JungleSelector:
     def __init__(self, screen):
         self.screen = screen
         self.font = pygame.font.SysFont("Arial", 36, bold=True)
         self.small_font = pygame.font.SysFont("Arial", 24)
+        self.back_button = BackButton(screen, pos=(60, 60))
 
         w, h = screen.get_size()
         self.stage_buttons = []
@@ -37,4 +39,6 @@ class JungleSelector:
             for btn in self.stage_buttons:
                 if btn.is_clicked(mouse_pos):
                     return "jungle_stage"
+            if self.back_button.is_clicked(mouse_pos):
+                return "jungle_intro"
         return None

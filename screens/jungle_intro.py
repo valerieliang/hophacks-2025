@@ -44,6 +44,10 @@ class JungleIntro:
         self.start_button.draw()
 
     def handle_event(self, event, mouse_pos):
-        if event.type == pygame.MOUSEBUTTONDOWN and self.start_button.is_clicked(mouse_pos):
-            return "jungle_selector"
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if self.start_button.is_clicked(mouse_pos):
+                return "jungle_selector"
+            if self.back_button.is_clicked(mouse_pos):
+                return "stage_select"  # go back to stage select
+        
         return None
