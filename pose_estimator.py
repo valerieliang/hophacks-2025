@@ -8,5 +8,6 @@ class PoseEstimator:
         # displays skeleton frame with 17 keypoints
         results = self.model(frame, verbose=False)
         annotated_frame = results[0].plot()
-        keypoints = results[0].keypoints  # list of [x, y, conf] per joint
+        # list of [x, y, conf] per joint
+        keypoints = results[0].keypoints
         return annotated_frame, keypoints
