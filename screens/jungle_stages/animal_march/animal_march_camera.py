@@ -105,15 +105,10 @@ class AnimalMarchCamera:
                                 x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
                                 self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
                                 self.update_score_display()
-                                if self.score >= self.max_score:
+                                if self.score >= self.max_score and not self.game_over:
                                     self.game_over = True
-                                    # Display "You Win!" in big letters
-                                    win_font = dynapuff(80)
-                                    win_text = win_font.render("You Win!", True, (255, 255, 0))
-                                    win_rect = win_text.get_rect(center=(self.screen.get_width() // 2,
-                                                                         self.screen.get_height() // 2))
-                                    self.screen.blit(win_text, win_rect)
-                                    pygame.display.update(win_rect)
+                                    # Switch to the Jungle Win screen after a short delay
+                                    pygame.time.set_timer(pygame.USEREVENT + 1, 500)  # 0.5s delay
                             elif not knee_up:
                                 self.knee_was_up = False
 
@@ -153,8 +148,13 @@ class AnimalMarchCamera:
                 if self.cap:
                     self.cap.release()
                 return "animal_march_intro"
-
             if self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
+        
+        if event.type == pygame.USEREVENT + 1 and self.game_over:
+            if self.cap:
+                self.cap.release()
+            return "jungle_win"  # this will signal your main loop to load jungle_win.py
+
 
         return None
