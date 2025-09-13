@@ -1,6 +1,7 @@
 import pygame
 from ui.buttons import Button
 from ui.back_button import BackButton
+from ui.desc_font import DescFont
 from assets.fonts import dynapuff
 
 class AnimalMarchIntro:
@@ -10,15 +11,18 @@ class AnimalMarchIntro:
 
         # Title font for kids
         self.title_font = dynapuff(64, bold=True) 
-        # Description font for parents
-        self.desc_font = dynapuff(24)
+
+        # Description fonts
+        self.game_lines = DescFont(screen, size=24, bold=False, color=(255, 255, 255), margin=50)
+        self.parent_lines = DescFont(screen, size=20, bold=False, color=(240, 240, 240), margin=50)
 
         # Start button to toggle camera
+        width = int(w * 0.5)
         self.start_button = Button(
             screen,
             image=None,
             pos=(w // 2, h - 100),
-            size=(220, 70),
+            size=(width, 80),
             text="Start Exercise"
         )
 
@@ -34,23 +38,19 @@ class AnimalMarchIntro:
         self.screen.blit(title_surf, title_surf.get_rect(center=(self.screen.get_width()//2, 150)))
 
         # Exciting game description for kids
-        game_text_lines = [
-            "March like an elephant through the jungle!",
-            "Each high knee stomp shakes the trees and makes fruit fall!",
-            "Collect points for every fruit you get!"
-        ]
-        for i, line in enumerate(game_text_lines):
-            surf = self.desc_font.render(line, True, (255, 255, 255))
-            self.screen.blit(surf, surf.get_rect(center=(self.screen.get_width()//2, 250 + i*40)))
+        game_text = ("March like an elephant through the jungle! Each high knee stomp shakes the trees "
+                     "and makes fruit fall! Collect points for every fruit you get!")
+
+        # Start y-coordinate below the title
+        y_start = 250
+        self.game_lines.render_text(game_text, y_start)
 
         # Parent PT goals (smaller font)
-        pt_lines = [
-            "PT Goal: Gross motor coordination, rhythm, bilateral movement.",
-            "Exercise: March in place, lifting knees high, swinging arms."
-        ]
-        for i, line in enumerate(pt_lines):
-            surf = self.desc_font.render(line, True, (240, 240, 240))
-            self.screen.blit(surf, surf.get_rect(center=(self.screen.get_width()//2, 450 + i*30)))
+        pt_text = ("PT Goal: Gross motor coordination, rhythm, bilateral movement. "
+                   "Exercise: March in place, lifting knees high, swinging arms.")
+
+        y_start += 120  # space between kid description and parent info
+        self.parent_lines.render_text(pt_text, y_start)
 
         # Draw buttons
         self.start_button.draw()
