@@ -1,54 +1,56 @@
 import time
-import numpy as np
 
 class TreePoseLogic:
-    def __init__(self, hold_time=10, lift_threshold=40):
+    def __init__(self, hold_time=10):
         """
-        hold_time: seconds required to win
-        lift_threshold: pixels ankle must be above knee
+        hold_time: seconds the pose must be held to win
         """
         self.hold_time = hold_time
-        self.lift_threshold = lift_threshold
-        self.start_time = None
-        self.has_won = False
-
-    def update(self, keypoints):
-        if self.has_won:
-            return True
-
-        if keypoints is None or len(keypoints.xy) == 0:
-            self.start_time = None
-            return False
-
-        # Get first person’s keypoints
-        pts = keypoints.xy[0]  # shape (17, 2)
-        left_knee, right_knee = pts[13], pts[14]
-        left_ankle, right_ankle = pts[15], pts[16]
-
-        valid_pose = False
-
-        # Check if left ankle is lifted higher (y smaller) than left knee
-        if left_ankle[1] < left_knee[1] - self.lift_threshold:
-            valid_pose = True
-
-        # Or if right ankle is lifted
-        if right_ankle[1] < right_knee[1] - self.lift_threshold:
-            valid_pose = True
-
-        if valid_pose:
-            if self.start_time is None:
-                self.start_time = time.time()
-            else:
-                elapsed = time.time() - self.start_time
-                if elapsed >= self.hold_time:
-                    self.has_won = True
-                    return True
-        else:
-            # Reset if they drop the pose
-            self.start_time = None
-
-        return False
+        self.in_pose_start = None  # when user entered pose
+        self.timer_start = None
+        self.pose_achieved = False
+        self.game_over = False
 
     def reset(self):
-        self.start_time = None
-        self.has_won = False
+        self.in_pose_start = None
+        self.timer_start = None
+        self.pose_achieved = False
+        self.game_over = False
+
+    def update(self, keypoints):
+        """
+        keypoints: dict with 'left_knee' and 'right_knee', each (x, y)
+        Returns: seconds left if countdown active, None otherwise
+        """
+        if 'left_knee' not in keypoints or 'right_knee' not in keypoints:
+            self.in_pose_start = None
+            self.timer_start = None
+            return None
+
+        left_knee_y = keypoints['left_knee'][1]
+        right_knee_y = keypoints['right_knee'][1]
+
+        # Check if one knee is higher than the other
+        if abs(left_knee_y - right_knee_y) > 20:  # require noticeable difference
+            if not self.in_pose_start:
+                # start 2-second buffer
+                self.in_pose_start = time.time()
+            elif time.time() - self.in_pose_start >= 2 and not self.timer_start:
+                # start countdown after buffer
+                self.timer_start = time.time()
+                self.pose_achieved = True
+        else:
+            # not in pose, reset
+            self.in_pose_start = None
+            self.timer_start = None
+            self.pose_achieved = False
+
+        # Update countdown
+        if self.timer_start:
+            elapsed = time.time() - self.timer_start
+            if elapsed >= self.hold_time:
+                self.game_over = True
+            else:
+                return self.hold_time - elapsed
+
+        return None
