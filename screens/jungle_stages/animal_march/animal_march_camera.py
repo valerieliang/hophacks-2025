@@ -12,6 +12,7 @@ import os
 
 FRUIT_SIZE = (100, 100)
 FRUIT_FOLDER = "assets/fruits/"
+MAX_SCORE = 2  # number of knee lifts to win
 
 class FallingFruit:
     def __init__(self, image, x, y=0, speed=None):
@@ -41,7 +42,7 @@ class AnimalMarchCamera:
 
         # Score logic
         self.score = 0
-        self.max_score = 20
+        self.max_score = MAX_SCORE 
         self.knee_was_up = False
         self.initialized = False
 
@@ -105,10 +106,12 @@ class AnimalMarchCamera:
                                 x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
                                 self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
                                 self.update_score_display()
+
                                 if self.score >= self.max_score and not self.game_over:
                                     self.game_over = True
-                                    # Switch to the Jungle Win screen after a short delay
-                                    pygame.time.set_timer(pygame.USEREVENT + 1, 500)  # 0.5s delay
+                                    # Immediately signal main loop to switch to win screen
+                                    self.next_screen = "jungle_win"
+
                             elif not knee_up:
                                 self.knee_was_up = False
 
@@ -150,11 +153,11 @@ class AnimalMarchCamera:
                 return "animal_march_intro"
             if self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
-        
-        if event.type == pygame.USEREVENT + 1 and self.game_over:
+
+        # If game over, return next screen immediately
+        if getattr(self, "game_over", False) and getattr(self, "next_screen", None):
             if self.cap:
                 self.cap.release()
-            return "jungle_win"  # this will signal your main loop to load jungle_win.py
-
+            return self.next_screen
 
         return None
