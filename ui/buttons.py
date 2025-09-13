@@ -1,4 +1,6 @@
 import pygame
+from assets.fonts import dynapuff
+
 
 class Button:
     def __init__(self, screen, image=None, pos=(0,0), size=None, text=""):
@@ -10,7 +12,7 @@ class Button:
                 self.image = pygame.transform.scale(self.image, size)
             self.rect = self.image.get_rect(center=pos)
         else:
-            self.font = pygame.font.SysFont("Arial", 32)
+            self.font = dynapuff(32)
             self.text = text
             self.rect = pygame.Rect(0, 0, size[0], size[1])
             self.rect.center = pos

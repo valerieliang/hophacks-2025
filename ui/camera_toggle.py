@@ -1,6 +1,6 @@
 import pygame
 
-BUTTON_DIM = 200  # button width and height
+BUTTON_DIM = 300  # button width and height
 Y_OFFSET = 20  # distance from bottom of screen
 IMAGE_PATH = "assets/camera_button.png"
 

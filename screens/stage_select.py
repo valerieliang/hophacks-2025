@@ -1,6 +1,7 @@
 import pygame
 from ui.buttons import Button
 from ui.back_button import BackButton
+from assets.fonts import dynapuff
 
 class StageSelect:
     def __init__(self, screen):
@@ -34,7 +35,7 @@ class StageSelect:
         self.placeholder_color = (150, 150, 150)  # grey
 
         # Title font
-        self.font = pygame.font.SysFont("DynaPuff", 48, bold=True)
+        self.font = dynapuff(48, bold=True)
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -49,7 +50,7 @@ class StageSelect:
         pygame.draw.rect(self.screen, self.placeholder_color, self.placeholder1_rect, border_radius=12)
         pygame.draw.rect(self.screen, self.placeholder_color, self.placeholder2_rect, border_radius=12)
 
-        placeholder_font = pygame.font.SysFont("Arial", 24)
+        placeholder_font = dynapuff(24, italic=True)
         for rect in [self.placeholder1_rect, self.placeholder2_rect]:
             text_surf = placeholder_font.render("Coming Soon", True, (220, 220, 220))
             self.screen.blit(text_surf, text_surf.get_rect(center=rect.center))
