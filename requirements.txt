@@ -1,5 +1,7 @@
-mediapipe==0.10.9
-opencv-python==4.10.0.84
-pygame==2.6.0
-numpy==1.26.4
-matplotlib==3.9.2
+# pip install -r requirements.txt
+
+ultralytics
+opencv-python
+pygame
+numpy
+matplotlib
