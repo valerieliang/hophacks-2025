@@ -1,6 +1,7 @@
 import pygame
 from ui.buttons import Button
 from ui.back_button import BackButton
+from assets.fonts import dynapuff
 
 ICON_DIM = 500
 
@@ -8,20 +9,22 @@ class JungleIntro:
     def __init__(self, screen):
         self.screen = screen
         w, h = screen.get_size()
-        self.title_font = pygame.font.SysFont("Arial", 72, bold=True)
-        self.desc_font = pygame.font.SysFont("Arial", 28)
+        self.title_font = dynapuff(72, bold=True)
+        self.desc_font = dynapuff(24)
         self.back_button = BackButton(screen)
 
         # Load stage icon
         self.icon = pygame.image.load("assets/jungle_adventure_icon.png").convert_alpha()
         self.icon = pygame.transform.scale(self.icon, (ICON_DIM, ICON_DIM))  # adjust size as needed
 
+        button_width = int(w * 0.5)
+        button_height = 80 
         self.start_button = Button(
             screen,
             image=None,
             pos=(w // 2, h - 100),
-            size=(260, 80),
-            text="Choose Mini-Games"
+            size=(button_width, button_height),
+            text="Select Mini-Game"
         )
 
     def draw(self):
