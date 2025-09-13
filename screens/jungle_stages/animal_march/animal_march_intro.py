@@ -47,7 +47,7 @@ class AnimalMarchIntro:
 
         # Parent PT goals (smaller font)
         pt_text_1 = "PT Goal: Gross motor coordination, rhythm, bilateral movement."
-        pt_text_2 = "Exercise: March in place, lifting knees high, swinging arms."
+        pt_text_2 = "Exercise: March in place, lifting knees high!"
 
         y_start += 110  # space between kid description and parent info
         self.parent_lines.render_text(pt_text_1, y_start)
