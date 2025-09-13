@@ -8,7 +8,7 @@ class JungleWin:
         self.screen = screen
         self.font = pygame.font.SysFont("Comic Sans MS", 80, bold=True)  # cute big letters
         self.small_font = dynapuff(40)
-        self.back_button = Button(screen, text="Back to Jungle Selector", pos=(screen.get_width() // 2, screen.get_height() - 100))
+        self.back_button = Button(screen, text="Back to Jungle Selector", pos=(screen.get_width() // 2, screen.get_height() - 100), size=(400, 70))
 
     def draw(self):
         self.screen.fill((135, 206, 250))  # light blue background

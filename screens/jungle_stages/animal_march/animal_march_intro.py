@@ -15,8 +15,8 @@ class AnimalMarchIntro:
         self.title_rect = self.title_image.get_rect(midtop=(w // 2, -25))
 
         # Description fonts
-        self.game_lines = DescFont(screen, size=24, bold=False, color=(255, 255, 255), margin=50)
-        self.parent_lines = DescFont(screen, size=20, bold=False, color=(240, 240, 240), margin=50)
+        self.game_lines = DescFont(screen, size=22, bold=False, color=(255, 255, 255), margin=50)
+        self.parent_lines = DescFont(screen, size=18, bold=False, color=(240, 240, 240), margin=50)
 
         # Start button to toggle camera
         width = int(w * 0.5)
