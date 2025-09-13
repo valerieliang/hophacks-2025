@@ -9,7 +9,7 @@ from ui.back_button import BackButton
 from ui.camera_toggle import CameraToggleButton
 from ui.buttons import Button   # generic button
 from assets.fonts import dynapuff
-from minigames.animal_march_logic import *
+from minigames.animal_march_logic import AnimalMarchGame, FallingFruit
 
 FRUIT_SIZE = (100, 100)
 FRUIT_FOLDER = "assets/fruits/"
@@ -70,8 +70,21 @@ class AnimalMarchCamera:
             if self.camera_on and self.cap.isOpened():
                 ret, frame = self.cap.read()
                 if ret:
-                    self.frame, _, self.keypoints = self.camera_manager.process_frame(frame)
-            time.sleep(0.01)  # small delay
+                    # Get processed frame and keypoints as list
+                    self.frame, _, humans_keypoints = self.camera_manager.process_frame(frame)
+                    
+                    if humans_keypoints is None:
+                        self.keypoints = []
+                    else:
+                        cleaned = []
+                        for kp in humans_keypoints:
+                            # ensure 17 keypoints per human
+                            if len(kp) < 17:
+                                kp = kp + [[0,0,0]]*(17 - len(kp))
+                            cleaned.append(kp)
+                        self.keypoints = cleaned
+            time.sleep(0.01)
+
 
     def stop_camera(self):
         self._stop_thread = True

@@ -44,25 +44,34 @@ class AnimalMarchGame:
         self.falling_fruits = []
 
     def process_keypoints(self, keypoints):
-        """Update game state based on current keypoints"""
-        kps = keypoints.xy[0].cpu().numpy()
-        if kps.shape[0] < 15:
+        """
+        keypoints: list of humans, each human is a list of 17 [x,y,conf]
+        Uses ankles, knees, hips for game logic
+        """
+        if not keypoints:
             return
 
-        left_hip_y = kps[11][1]
-        right_hip_y = kps[12][1]
-        left_knee_y = kps[13][1]
-        right_knee_y = kps[14][1]
+        # Use first human detected
+        kp = keypoints[0]
+        if len(kp) < 15:
+            print(f"Partial keypoints detected: {len(kp)} points (not enough for knees/hips)")
+            return
 
-        # Smooth
+        # Extract relevant joints
+        left_hip_y = kp[11][1]
+        right_hip_y = kp[12][1]
+        left_knee_y = kp[13][1]
+        right_knee_y = kp[14][1]
+
+        # Smooth with history
         self.left_knee_history.append(left_knee_y)
         self.right_knee_history.append(right_knee_y)
-        left_knee_avg = np.mean(self.left_knee_history)
-        right_knee_avg = np.mean(self.right_knee_history)
+        left_knee_avg = sum(self.left_knee_history)/len(self.left_knee_history)
+        right_knee_avg = sum(self.right_knee_history)/len(self.right_knee_history)
 
         # Check if knee is up
         knee_up = (left_knee_avg < left_hip_y + self.threshold or
-                   right_knee_avg < right_hip_y + self.threshold)
+                right_knee_avg < right_hip_y + self.threshold)
 
         if not self.initialized:
             self.knee_was_up = knee_up
@@ -85,6 +94,7 @@ class AnimalMarchGame:
 
         elif not knee_up:
             self.knee_was_up = False
+
 
     def update_fruits(self):
         """Move fruits down the screen"""
