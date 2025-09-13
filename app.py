@@ -1,5 +1,6 @@
 import pygame, sys
 from screens.title_screen import TitleScreen
+from screens.stage_select import StageSelect
 from screens.jungle_intro import JungleIntro
 from screens.jungle_selector import JungleSelector
 from screens.jungle_stage import JungleStage
@@ -15,6 +16,7 @@ clock = pygame.time.Clock()
 # Screen manager
 screens = {
     "title": TitleScreen(screen),
+    "stage_select": StageSelect(screen),
     "jungle_intro": JungleIntro(screen),
     "jungle_selector": JungleSelector(screen),
     "jungle_stage": JungleStage(screen)

@@ -10,9 +10,9 @@ class JungleSelector:
         w, h = screen.get_size()
         self.stage_buttons = []
         stage_names = [
-            "🐘 Animal March", "🌳 Tree Pose Challenge",
-            "🐒 Monkey Moves", "🌿 Jungle Explorer",
-            "🪨 River Crossing", "🥥 Coconut Catch", "🐢 Jungle Rest"
+            "Animal March", "Tree Pose Challenge",
+            "Monkey Moves", "Jungle Explorer",
+            "River Crossing", "Coconut Catch", "Jungle Rest"
         ]
         for i, name in enumerate(stage_names):
             btn = Button(
