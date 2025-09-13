@@ -1,107 +1,71 @@
-import pygame
-import random
-import math
+import cv2
+import numpy as np
+from ultralytics import YOLO
+import time
 
-# Constants
-SCREEN_WIDTH, SCREEN_HEIGHT = 800, 600
-STONE_RADIUS = 30
-STEP_TOLERANCE = 50  # Max distance from stone center to count as a step
-NUM_STEPS = 10
+# --- CONFIGURATION ---
+POINTS_TO_WIN = 5
+FLOOR_POINTS = [(200, 400), (440, 400)]  # Example floor points (x, y)
+POINT_RADIUS = 50  # How close (in pixels) a foot must be to a point
+RETURN_TO_SELECTOR_DELAY = 2  # Seconds to wait before returning
 
-# Colors
-WHITE = (255, 255, 255)
-BLUE = (0, 100, 255)
-GRAY = (180, 180, 180)
-RED = (255, 0, 0)
-GREEN = (0, 200, 0)
+# --- INITIALIZATION ---
+model = YOLO('yolov8n-pose.pt')  # Make sure you have this model downloaded
+cap = cv2.VideoCapture(0)
+score = 0
+visited = [False] * len(FLOOR_POINTS)
 
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("River Crossing Minigame")
-clock = pygame.time.Clock()
+def feet_positions(keypoints):
+    # COCO format: 15 = left ankle, 16 = right ankle
+    left_ankle = keypoints[15][:2]
+    right_ankle = keypoints[16][:2]
+    return [tuple(map(int, left_ankle)), tuple(map(int, right_ankle))]
 
-# Generate stepping stones
-def generate_stones(num_steps):
-    stones = []
-    x = SCREEN_WIDTH // 4
-    y = SCREEN_HEIGHT - 100
-    side = 1
-    for i in range(num_steps):
-        stones.append((x, y))
-        x += side * random.randint(120, 180)
-        y -= random.randint(40, 70)
-        side *= -1
-    return stones
+def check_points(feet, floor_points, visited):
+    global score
+    for i, pt in enumerate(floor_points):
+        if not visited[i]:
+            for foot in feet:
+                if np.linalg.norm(np.array(foot) - np.array(pt)) < POINT_RADIUS:
+                    visited[i] = True
+                    score += 1
+                    print(f"Scored! Total: {score}")
+                    break
 
-stones = generate_stones(NUM_STEPS)
-
-# Simulated user feet positions (replace with real tracking in production)
-def get_user_feet(step_idx):
-    # Simulate user stepping on the stone, with some random error
-    cx, cy = stones[step_idx]
-    if random.random() < 0.2:  # 20% chance to "splash"
-        offset = random.randint(STEP_TOLERANCE + 10, STEP_TOLERANCE + 40)
-        angle = random.uniform(0, 2 * math.pi)
-        fx = cx + offset * math.cos(angle)
-        fy = cy + offset * math.sin(angle)
-    else:
-        fx = cx + random.randint(-10, 10)
-        fy = cy + random.randint(-10, 10)
-    # Simulate two feet
-    return [(fx - 15, fy), (fx + 15, fy)]
-
-def distance(p1, p2):
-    return math.hypot(p1[0] - p2[0], p1[1] - p2[1])
+def draw_overlay(frame, floor_points, visited, score):
+    for i, pt in enumerate(floor_points):
+        color = (0, 255, 0) if visited[i] else (0, 0, 255)
+        cv2.circle(frame, pt, POINT_RADIUS, color, 2)
+    cv2.putText(frame, f"Score: {score}", (10, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255,255,255), 2)
 
 def main():
-    running = True
-    step_idx = 0
-    splashes = 0
-    completed = False
+    global score, visited
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-    while running:
-        screen.fill(WHITE)
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
+        results = model.predict(frame, conf=0.5)
+        if results and results[0].keypoints is not None:
+            for kp in results[0].keypoints.xy:
+                feet = feet_positions(kp)
+                check_points(feet, FLOOR_POINTS, visited)
 
-        # Draw stones
-        for i, (x, y) in enumerate(stones):
-            color = GRAY if i > step_idx else GREEN
-            pygame.draw.circle(screen, color, (int(x), int(y)), STONE_RADIUS)
+        draw_overlay(frame, FLOOR_POINTS, visited, score)
+        cv2.imshow("River Crossing Minigame", frame)
 
-        if not completed:
-            # Get user feet positions (simulate)
-            feet = get_user_feet(step_idx)
-            for fx, fy in feet:
-                pygame.draw.circle(screen, BLUE, (int(fx), int(fy)), 12)
+        if score >= POINTS_TO_WIN:
+            cv2.putText(frame, "Minigame Complete!", (100, 200), cv2.FONT_HERSHEY_SIMPLEX, 2, (0,255,0), 4)
+            cv2.imshow("River Crossing Minigame", frame)
+            cv2.waitKey(RETURN_TO_SELECTOR_DELAY * 1000)
+            print("Returning to jungle selector screen...")
+            break # I'm really not sure if this even does anything 
 
-            # Check if both feet are close enough to the current stone
-            cx, cy = stones[step_idx]
-            if all(distance((fx, fy), (cx, cy)) < STEP_TOLERANCE for fx, fy in feet):
-                step_idx += 1
-            else:
-                # Splash!
-                splashes += 1
-                pygame.draw.circle(screen, RED, (int(cx), int(cy)), STONE_RADIUS + 10, 4)
-                step_idx += 1  # Still move forward
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
 
-            if step_idx >= NUM_STEPS:
-                completed = True
-
-        # Show splash count and completion
-        font = pygame.font.SysFont(None, 36)
-        splash_text = font.render(f"Splashes: {splashes}", True, RED)
-        screen.blit(splash_text, (10, 10))
-        if completed:
-            msg = font.render("River crossed!", True, GREEN)
-            screen.blit(msg, (SCREEN_WIDTH // 2 - 100, 50))
-
-        pygame.display.flip()
-        pygame.time.wait(700)
-        clock.tick(60)
-
-    pygame.quit()
+    cap.release()
+    cv2.destroyAllWindows() 
 
 if __name__ == "__main__":
     main()
