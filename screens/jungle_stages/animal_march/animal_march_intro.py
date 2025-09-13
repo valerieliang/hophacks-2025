@@ -38,7 +38,7 @@ class AnimalMarchIntro:
         self.screen.blit(self.title_image, self.title_rect)
 
         # Exciting game description for kids
-        game_text = ("March like an elephant through the jungle! Each high knee stomp shakes the trees "
+        game_text = ("Turn sideways to the camera and march like an elephant through the jungle! Each high knee stomp shakes the trees "
                      "and makes fruit fall! Collect points for every fruit you get!")
 
         # Start y-coordinate below the title
