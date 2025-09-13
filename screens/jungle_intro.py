@@ -1,6 +1,8 @@
 import pygame
 from ui.buttons import Button
 
+ICON_DIM = 500
+
 class JungleIntro:
     def __init__(self, screen):
         self.screen = screen
@@ -10,7 +12,7 @@ class JungleIntro:
 
         # Load stage icon
         self.icon = pygame.image.load("assets/jungle_adventure_icon.png").convert_alpha()
-        self.icon = pygame.transform.scale(self.icon, (300, 300))  # adjust size as needed
+        self.icon = pygame.transform.scale(self.icon, (ICON_DIM, ICON_DIM))  # adjust size as needed
 
         self.start_button = Button(
             screen,
@@ -23,11 +25,11 @@ class JungleIntro:
     def draw(self):
         self.screen.fill((34, 139, 34))
 
-        title = self.title_font.render("Jungle Adventure Quest", True, (255, 255, 255))
-        self.screen.blit(title, title.get_rect(center=(self.screen.get_width() // 2, 100)))
-
-        # Draw the stage icon in the middle
-        self.screen.blit(self.icon, self.icon.get_rect(center=(self.screen.get_width() // 2, 300)))
+        # Draw the stage icon in the middle top
+        # Center the icon horizontally, 50 pixels from the top
+        icon_rect = self.icon.get_rect(centerx=self.screen.get_width() // 2)
+        icon_rect.top = 20
+        self.screen.blit(self.icon, icon_rect)
 
         # Description under the image (for parents)
         desc_lines = [

@@ -9,7 +9,7 @@ pygame.init()
 
 info = pygame.display.Info()
 screen_width, screen_height = info.current_w - 50, info.current_h - 100
-screen = pygame.display.set_mode((screen_width, screen_height))
+screen = pygame.display.set_mode((screen_height, screen_height))
 
 clock = pygame.time.Clock()
 
