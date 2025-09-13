@@ -39,7 +39,7 @@ class AnimalMarchIntro:
 
         # Exciting game description for kids
         game_text = ("Turn sideways to the camera and march like an elephant through the jungle! Each high knee stomp shakes the trees "
-                     "and makes fruit fall! Collect points for every fruit you get!")
+                     "and makes fruit fall! Collect 20 fruits to win!")
 
         # Start y-coordinate below the title
         y_start = self.title_rect.bottom - 25
