@@ -75,60 +75,20 @@ class AnimalMarchCamera:
                 self.screen.blit(frame_surface, (0, 0))
 
                 if keypoints is not None:
-                    kps = keypoints.xy[0].cpu().numpy()
-                    if kps.shape[0] >= 15:
-                        left_hip_y = kps[11][1]
-                        right_hip_y = kps[12][1]
-                        left_knee_y = kps[13][1]
-                        right_knee_y = kps[14][1]
-
-                        # Smooth knee positions
-                        self.left_knee_history.append(left_knee_y)
-                        self.right_knee_history.append(right_knee_y)
-
-                        left_knee_avg = np.mean(self.left_knee_history)
-                        right_knee_avg = np.mean(self.right_knee_history)
-
-                        # Knee up if either knee is near the hip
-                        knee_up = (left_knee_avg < left_hip_y + self.threshold or
-                                   right_knee_avg < right_hip_y + self.threshold)
-
-                        if not self.initialized:
-                            self.knee_was_up = knee_up
-                            self.initialized = True
-                        else:
-                            if knee_up and not self.knee_was_up and self.score < self.max_score:
-                                self.score += 1
-                                self.knee_was_up = True
-                                # Spawn a random fruit at random x position
-                                fruit_img = random.choice(self.fruits_images)
-                                x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
-                                self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
-                                self.update_score_display()
-                                if self.score >= self.max_score and not self.game_over:
-                                    self.game_over = True
-                                    # Switch to the Jungle Win screen after a short delay
-                                    pygame.time.set_timer(pygame.USEREVENT + 1, 500)  # 0.5s delay
-                            elif not knee_up:
-                                self.knee_was_up = False
-
+                    self.game_logic.process_keypoints(keypoints)
         elif not self.camera_on:
-            # Show Paused text in the middle
             pause_font = dynapuff(80)
             pause_text = pause_font.render("Paused", True, (255, 255, 255))
             pause_rect = pause_text.get_rect(center=(self.screen.get_width() // 2,
-                                                     self.screen.get_height() // 2))
+                                                    self.screen.get_height() // 2))
             self.screen.blit(pause_text, pause_rect)
 
-        # Update and draw falling fruits
-        for fruit in self.falling_fruits[:]:
-            fruit.update()
-            fruit.draw(self.screen)
-            if fruit.y > self.screen.get_height():
-                self.falling_fruits.remove(fruit)
+        # Update & draw fruits
+        self.game_logic.update_fruits()
+        self.game_logic.draw_fruits()
 
-        # Display score
-        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
+        # Draw score
+        score_text = self.font.render(f"Score: {self.game_logic.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (20, self.screen.get_height() - 50))
 
         # Draw camera toggle and back button
@@ -137,24 +97,22 @@ class AnimalMarchCamera:
 
         pygame.display.flip()
 
-    def update_score_display(self):
-        score_text = self.font.render(f"Score: {self.score}", True, (255, 255, 255))
-        self.screen.blit(score_text, (20, self.screen.get_height() - 50))
-        pygame.display.update(pygame.Rect(20, self.screen.get_height() - 50, 200, 40))
+        # Automatically go to next screen if game over
+        if self.game_logic.game_over:
+            if self.cap and self.cap.isOpened():
+                self.cap.release()
+            return self.game_logic.get_next_screen()
 
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.back_button.is_clicked(mouse_pos):
-                if self.cap:
+                if self.cap and self.cap.isOpened():
                     self.cap.release()
+                    cv2.destroyAllWindows()  # just in case
                 return "animal_march_intro"
             if self.camera_button.is_clicked(mouse_pos):
                 self.camera_on = not self.camera_on
-        
-        if event.type == pygame.USEREVENT + 1 and self.game_over:
-            if self.cap:
-                self.cap.release()
-            return "jungle_win"  # this will signal your main loop to load jungle_win.py
-
-
+                # immediately release camera if turning off
+                if not self.camera_on and self.cap and self.cap.isOpened():
+                    self.cap.release()
         return None
