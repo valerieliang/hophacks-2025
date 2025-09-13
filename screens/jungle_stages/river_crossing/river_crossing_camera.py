@@ -74,11 +74,8 @@ class RiverCrossingCamera:
             self.camera_button.draw()
         
         # --- Win Overlay ---
-        if self.game_logic.game_over or not self.camera_on:
-            # Draw full-screen win image 
-            self.screen.blit(self.game_logic.win_image, (0, 0))
-
-            # Draw Back to Menu button
+        if self.game_logic.game_over:
+            self.screen.blit(self.win_image, (0, 0))
             self.menu_button.draw()
         
         # Always draw back button in corner

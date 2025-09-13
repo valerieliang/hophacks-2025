@@ -3,6 +3,7 @@ import numpy as np
 from ultralytics import YOLO
 import time
 
+
 POINTS_TO_WIN = 5
 FLOOR_POINTS = [(200, 400), (440, 400)]  # Example floor points (x, y)
 POINT_RADIUS = 50  # How close (in pixels) a foot must be to a point
@@ -15,6 +16,10 @@ class RiverCrossingGame:
         self.cap = cv2.VideoCapture(0)
         self.score = 0
         self.visited = [False] * len(FLOOR_POINTS)
+        self.game_over = False
+        self.win_image = cv2.imread("assets/jungle_winner.png")
+        self.win_image = cv2.resize(self.win_image, (int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))))
+
 
     def feet_positions(self, keypoints):
         # COCO format: 15 = left ankle, 16 = right ankle
@@ -30,6 +35,8 @@ class RiverCrossingGame:
                         self.visited[i] = True
                         self.score += 1
                         print(f"Scored! Total: {self.score}")
+                        if self.score >= POINTS_TO_WIN:
+                            self.game_over = True 
                         break
 
     def draw_overlay(self, frame):
