@@ -21,7 +21,7 @@ class AnimalMarchCamera:
         self.camera_manager = CameraManager(screen)
         self.back_button = BackButton(screen, pos=(60, 60))
         self.font = dynapuff(40)
-        self.camera_button = CameraToggleButton(screen, size=200)
+        self.camera_button = CameraToggleButton(screen, size=180)
         self.camera_on = False
 
         # Threading

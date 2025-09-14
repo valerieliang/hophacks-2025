@@ -9,7 +9,7 @@ class CameraToggleButton:
     def __init__(self, screen, size=BUTTON_DIM, y_offset=Y_OFFSET):
         self.screen = screen
         self.original_image = pygame.image.load(IMAGE_PATH).convert_alpha()
-        self.image = pygame.transform.smoothscale(self.original_image, (BUTTON_DIM, BUTTON_DIM))
+        self.image = pygame.transform.smoothscale(self.original_image, (size, size))
         self.rect = self.image.get_rect()
         self.rect.midbottom = (screen.get_width() // 2, screen.get_height() - 20)
 
