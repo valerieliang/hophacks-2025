@@ -20,3 +20,27 @@ Traditional physical therapy exercises can feel monotonous, especially for young
 - Jungle-themed stage.
 - Three different movement activities connected to the theme.
 - Vibrant visuals and win conditions to sustain interest in young patients and motivate exercise completion.
+
+## DevPost Responses
+
+### Inspiration
+Valerie once sprained her ankle badly, and was prescribed a series of physical therapy exercises to help her recover fully. However, the exercises became boring, and there was not enough motivation to complete them as consistently as was required, so her ankle never healed as well as it should have.
+Many children and teens may feel the same way when they are required to do physical therapy; the lack of engagement can seriously affect recovery outcomes when it doesn’t have to be this way. That’s why we set out to create a physical therapy game app that turns those tedious exercises into interactive, motivating experiences. By making therapy fun and rewarding, we believe patients will be more engaged, complete their rehab fully, and get back to the activities they love faster. 
+
+### What it does
+MoveQuest provides a series of themed physical therapy exercises for users to follow. Upon completing enough repetitions of a task, users are rewarded with a win screen as positive reinforcement to motivate them to perform the activity more consistently, as they would associate physical therapy with fun and not just obligation. Following tasks with proper visual feedback from the game allows for greater independence with performing these exercises as well. 
+
+### How we built it
+We built the physical therapy game app using Python, Pygame, OpenCV (cv2), NumPy, and Ultralytics' YOLOv5 model. The app uses the device’s camera to track user movements in real-time, detecting key body joints and visualizing them as a skeleton. OpenCV handled the video capture and image processing, while YOLOv5 provided human pose estimation for joint detection. NumPy was used for efficient data manipulation and to convert tensor data into a more manageable format for visualization. Pygame rendered the skeleton and provided a simple UI with basic gamified elements to encourage users. 
+
+### Challenges we ran into
+Accurately interpreting the visual tracking data to determine if the user is performing a task properly was the primary challenge, since the model used for tracking displayed more jittery and inconsistent keypoints in the skeleton displayed on the screen on top of the user. This presented more difficulty for precise movements and ensuring that some poses were held for extended durations. We resolved this by converting the data formatted as a tensor to numpy for better postprocessing and calculations and a less frustrating experience for users who would’ve otherwise seen that the skeleton and game progression didn’t accurately reflect their movements. 
+
+### Accomplishments that we're proud of
+In just one day, our team successfully developed a working prototype of a physical therapy game that uses real-time motion tracking via a device’s camera. The goal was to create an engaging way for users to perform rehab exercises in a more fun context, and within a tight timeframe, we were able to design and build a basic but functional and visually appealing prototype. While it’s still in its early stages, we were able to deliver a promising concept for a tool that could help people recover faster by making rehab exercises more interactive and fun.
+
+### What we learned
+Our technical fusion of real-time YOLO pose estimation with a PyGame platform was a wild ride of learning on the fly, where our main challenge wasn’t just translating body keypoints into game actions like marching, but desperately trying to stop the video feed from crashing Sophia's laptop. We quickly pivoted from model optimization to survival mode, using the raw keypoint data to trigger a lightweight but engaging UI that felt magical without melting our CPU. We believe this scrappy prototype proves a powerful point: you don't need a supercomputer to make a real impact. It demonstrates the immense potential of accessible, camera-based body tracking to make healthcare engaging for children, offering a cost-effective and playful alternative to expensive equipment that can run on the hardware kids already have at home.
+
+### What's next for MoveQuest
+We plan to add more themes and activities that target different parts of the body so everyone can benefit from MoveQuest, as well as track how many times a user has successfully performed a given activity so they can be motivated to maintain a streak for consistency. Real-time feedback and encouragement could also allow users to push through an activity to completion. 
