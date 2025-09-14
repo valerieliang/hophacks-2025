@@ -8,6 +8,7 @@ from ui.camera_toggle import CameraToggleButton
 from ui.buttons import Button
 from assets.fonts import dynapuff
 from minigames.tree_pose_logic import TreePoseLogic
+from ui.tree_growth_manager import TreeGrowthManager
 
 class TreePoseCamera:
     def __init__(self, screen):
@@ -40,6 +41,8 @@ class TreePoseCamera:
             pos=(screen_w // 2, screen_h - 100),
             size=(300, 80)
         )
+
+        self.tree_manager = TreeGrowthManager(self.screen.get_size())
 
         # Debug flag
         self.show_debug = True
@@ -115,7 +118,7 @@ class TreePoseCamera:
         # Instructions
         if not self.game_logic.game_over and not self.game_logic.pose_achieved:
             instruction_font = dynapuff(30)
-            instruction_text = instruction_font.render("Stand on one leg like a tree, then switch sides!", True, (255, 255, 255))
+            instruction_text = instruction_font.render("Stand on one leg like a tree!", True, (255, 255, 255))
             instruction_rect = instruction_text.get_rect(center=(self.screen.get_width() // 2, 50))
             self.screen.blit(instruction_text, instruction_rect)
 
@@ -127,6 +130,9 @@ class TreePoseCamera:
                 timer_rect = timer_text.get_rect(center=(self.screen.get_width() // 2, 100))
                 self.screen.blit(timer_text, timer_rect)
 
+                if not self.tree_manager.active or self.tree_manager.finished:
+                    self.tree_manager.start_new_tree()
+                self.tree_manager.update(seconds_left, self.game_logic.hold_time)
                 # Progress bar
                 progress_width = 400
                 progress_height = 20
@@ -140,6 +146,11 @@ class TreePoseCamera:
                 progress = 1.0 - (seconds_left / self.game_logic.hold_time)
                 filled_width = int(progress_width * progress)
                 pygame.draw.rect(self.screen, (0, 255, 0), (progress_x, progress_y, filled_width, progress_height))
+            else:
+                # Countdown finished but game isn’t over, let tree finish
+                self.tree_manager.update(None, self.game_logic.hold_time)
+            
+            self.tree_manager.draw(self.screen)
 
         # Debug information
         if self.show_debug and self.camera_on and not self.game_logic.game_over:
