@@ -30,6 +30,13 @@ class RiverCrossingGame:
         self.current_foot_positions = []
         self.last_foot_y = None
 
+        self.rock_images = [
+            pygame.transform.scale(pygame.image.load("assets/rocks/rock_1.png").convert_alpha(), (POINT_RADIUS*2, POINT_RADIUS*2)),
+            pygame.transform.scale(pygame.image.load("assets/rocks/rock_2.png").convert_alpha(), (POINT_RADIUS*2, POINT_RADIUS*2))
+        ]
+
+        self.current_rock_image = None
+
     def set_screen_dimensions(self, width, height):
         """Update screen dimensions for stone placement"""
         self.screen_width = width
@@ -105,6 +112,8 @@ class RiverCrossingGame:
             stone_y = max(padding, min(self.screen_height - padding, stone_y))
         
         self.current_stone = (stone_x, stone_y)
+        self.current_rock_image = random.choice(self.rock_images)
+
 
     def update(self, keypoints_list):
         if self.game_over or not keypoints_list:
@@ -161,31 +170,22 @@ class RiverCrossingGame:
                 return  # Exit after first hit
 
     def draw_stone_on_surface(self, surface, offset=(0,0)):
-        """Draw the current stone that needs to be reached"""
-        if self.current_stone is None:
+        """Draw the current stone using a rock image"""
+        if self.current_stone is None or self.current_rock_image is None:
             return
-            
+
         stone_x, stone_y = self.current_stone
         ox, oy = offset
-        
-        # Draw the stone as a blue circle with a border
-        pygame.draw.circle(surface, (0, 150, 255), (stone_x + ox, stone_y + oy), POINT_RADIUS, 0)
-        pygame.draw.circle(surface, (0, 100, 200), (stone_x + ox, stone_y + oy), POINT_RADIUS, 3)
-        
-        # Draw detection area (optional - for debugging)
-        # pygame.draw.circle(surface, (100, 200, 255, 50), (stone_x + ox, stone_y + oy), STONE_DETECTION_RADIUS, 2)
-        
-        # Draw stone number (current score + 1)
+
+        # Draw the rock image centered on the stone
+        rock_rect = self.current_rock_image.get_rect(center=(stone_x + ox, stone_y + oy))
+        surface.blit(self.current_rock_image, rock_rect)
+
+        # Optional: Draw stone number
         font = pygame.font.Font(None, 48)
         text = font.render(str(self.score + 1), True, (255, 255, 255))
         text_rect = text.get_rect(center=(stone_x + ox, stone_y + oy))
         surface.blit(text, text_rect)
-        
-        # Draw progress indicator
-        progress_text = f"Stone {self.score + 1}/{self.points_to_win}"
-        progress_font = pygame.font.Font(None, 36)
-        progress_surface = progress_font.render(progress_text, True, (255, 255, 255))
-        surface.blit(progress_surface, (10, 10))
 
     def draw_foot_positions(self, surface, offset=(0,0)):
         """Helper method to draw current foot positions for debugging"""
