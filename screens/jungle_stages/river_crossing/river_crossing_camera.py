@@ -28,6 +28,8 @@ class RiverCrossingCamera:
 
         # Game logic
         self.game_logic = RiverCrossingGame()
+        # Set screen dimensions for proper stone placement
+        self.game_logic.set_screen_dimensions(screen.get_width(), screen.get_height())
 
         # Win overlay
         self.win_image = pygame.image.load("assets/jungle_winner.png").convert_alpha()
@@ -122,8 +124,12 @@ class RiverCrossingCamera:
                             coord_text = debug_font.render(f"({fx},{fy})", True, (255,255,255))
                             self.screen.blit(coord_text, (fx+ox+20, fy+oy-10))
 
-            # --- Draw next stone ---
+            # --- Draw current stone ---
             self.game_logic.draw_stone_on_surface(self.screen, self.offset)
+
+            # --- Draw debug foot positions (optional) ---
+            if self.show_debug:
+                self.game_logic.draw_foot_positions(self.screen, self.offset)
 
             # --- Draw debug info ---
             if self.show_debug:
@@ -168,7 +174,7 @@ class RiverCrossingCamera:
         self.screen.blit(debug_text, (10, y_offset))
         y_offset += 25
         
-        # Show foot coordinates only in debug mode
+        # Show foot coordinates
         if self.keypoints:
             for i, kp in enumerate(self.keypoints):
                 feet = self.game_logic.feet_positions(kp)
@@ -178,22 +184,31 @@ class RiverCrossingCamera:
                         self.screen.blit(coord_text, (10, y_offset))
                         y_offset += 20
         
-        # Stones info
-        if self.game_logic.stones:
-            try:
-                next_index = self.game_logic.visited.index(False)
-                next_stone = self.game_logic.stones[next_index]
-                stone_text = debug_font.render(f"Next stone: ({next_stone[0]}, {next_stone[1]})", True, (255, 255, 0))
-                self.screen.blit(stone_text, (10, y_offset))
-                y_offset += 25
-            except ValueError:
-                complete_text = debug_font.render("All stones visited!", True, (255, 255, 0))
-                self.screen.blit(complete_text, (10, y_offset))
-                y_offset += 25
+        # Current stone info
+        if self.game_logic.current_stone:
+            stone_x, stone_y = self.game_logic.current_stone
+            stone_text = debug_font.render(f"Current stone: ({stone_x}, {stone_y})", True, (255, 255, 0))
+            self.screen.blit(stone_text, (10, y_offset))
+            y_offset += 25
+        else:
+            no_stone_text = debug_font.render("No stone generated yet", True, (255, 255, 0))
+            self.screen.blit(no_stone_text, (10, y_offset))
+            y_offset += 25
         
         # Game status
-        status_text = debug_font.render(f"Stones generated: {self.game_logic.stones_generated}", True, (255, 255, 0))
+        status_text = debug_font.render(f"Game over: {self.game_logic.game_over}", True, (255, 255, 0))
         self.screen.blit(status_text, (10, y_offset))
+        y_offset += 25
+        
+        # Hit cooldown
+        cooldown_text = debug_font.render(f"Hit cooldown: {self.game_logic.hit_cooldown}", True, (255, 255, 0))
+        self.screen.blit(cooldown_text, (10, y_offset))
+        y_offset += 25
+        
+        # Current foot positions count
+        foot_count = len(self.game_logic.current_foot_positions)
+        foot_count_text = debug_font.render(f"Tracked feet: {foot_count}", True, (255, 255, 0))
+        self.screen.blit(foot_count_text, (10, y_offset))
 
     # --- Event Handling ---
     def handle_event(self, event, mouse_pos):
@@ -214,5 +229,9 @@ class RiverCrossingCamera:
         # Toggle debug with 'D' key
         if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
             self.show_debug = not self.show_debug
+            
+        # Reset game with 'R' key (for testing)
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
+            self.game_logic.reset_game()
             
         return None

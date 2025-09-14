@@ -1,18 +1,21 @@
 import numpy as np
 import pygame
+import random
 from collections import deque
 
-POINT_RADIUS = 40
-MAX_X_DISTANCE = 150  # max horizontal distance a foot can reach from previous stone
+POINT_RADIUS = 60  # Increased from 40 for easier targeting
+STONE_DETECTION_RADIUS = 80  # Even more generous detection area
+MIN_STONE_DISTANCE = 100  # Minimum distance from current foot position
+MAX_STONE_DISTANCE = 300  # Maximum distance from current foot position
 
 class RiverCrossingGame:
     def __init__(self, points_to_win=5):
         self.score = 0
         self.game_over = False
         self.points_to_win = points_to_win
-        self.stones = []
-        self.visited = []
-        self.stones_generated = False  # only generate initial stones once
+        self.current_stone = None
+        self.screen_width = 1280  # Default screen width, can be updated
+        self.screen_height = 720  # Default screen height, can be updated
         
         # Foot position smoothing
         self.foot_history_len = 5
@@ -22,6 +25,15 @@ class RiverCrossingGame:
         # Stone hit detection
         self.hit_cooldown = 0
         self.min_cooldown_frames = 30  # Prevent multiple hits on same stone
+        
+        # Track current foot positions for stone generation
+        self.current_foot_positions = []
+        self.last_foot_y = None
+
+    def set_screen_dimensions(self, width, height):
+        """Update screen dimensions for stone placement"""
+        self.screen_width = width
+        self.screen_height = height
 
     def feet_positions(self, keypoints, conf_threshold=0.5):
         """
@@ -29,7 +41,6 @@ class RiverCrossingGame:
         Returns list of detected ankles [(x,y), ...] or None if none found
         """
         if keypoints is None or len(keypoints) < 17:
-            print(f"Partial keypoints detected: {0 if keypoints is None else len(keypoints)} points")
             return None
 
         # Extract ankle keypoints (indices 15 and 16)
@@ -65,18 +76,35 @@ class RiverCrossingGame:
             else:
                 feet.append((int(right_x), int(right_y)))
 
-        # Debug output
-        if len(feet) == 2:
-            print(f"Both ankles detected: L({left_x:.1f},{left_y:.1f},{left_conf:.2f}), R({right_x:.1f},{right_y:.1f},{right_conf:.2f})")
-        elif len(feet) == 1:
-            missing = "Right" if left_conf >= conf_threshold else "Left"
-            detected = "Left" if left_conf >= conf_threshold else "Right"
-            print(f"Only {detected} ankle detected ({missing} missing): {feet[0]}")
-        else:
-            print(f"No ankles detected with sufficient confidence: L:{left_conf:.2f} R:{right_conf:.2f}")
-            return None
+        return feet if feet else None
 
-        return feet
+    def generate_next_stone(self, current_feet):
+        """Generate a random stone position that's reachable from current foot positions"""
+        if not current_feet:
+            # If no feet detected, place stone in center of screen
+            stone_x = self.screen_width // 2
+            stone_y = self.screen_height // 2
+        else:
+            # Get average foot position
+            avg_x = sum(f[0] for f in current_feet) / len(current_feet)
+            avg_y = sum(f[1] for f in current_feet) / len(current_feet)
+            
+            # Store the Y level for consistent stone placement
+            self.last_foot_y = avg_y
+            
+            # Generate random position within reachable distance
+            angle = random.uniform(0, 2 * np.pi)
+            distance = random.uniform(MIN_STONE_DISTANCE, MAX_STONE_DISTANCE)
+            
+            stone_x = int(avg_x + distance * np.cos(angle))
+            stone_y = int(avg_y + distance * np.sin(angle) * 0.3)  # Reduce Y variation
+            
+            # Keep stone within screen bounds with padding
+            padding = POINT_RADIUS + 10
+            stone_x = max(padding, min(self.screen_width - padding, stone_x))
+            stone_y = max(padding, min(self.screen_height - padding, stone_y))
+        
+        self.current_stone = (stone_x, stone_y)
 
     def update(self, keypoints_list):
         if self.game_over or not keypoints_list:
@@ -86,109 +114,93 @@ class RiverCrossingGame:
         if self.hit_cooldown > 0:
             self.hit_cooldown -= 1
 
-        # Generate stones ONLY ONCE when not yet generated
-        if not self.stones_generated:
-            for kp in keypoints_list:
-                feet = self.feet_positions(kp)
-                if feet and len(feet) >= 1:
-                    # Use the average Y position of detected feet
-                    avg_y = sum(f[1] for f in feet) // len(feet)
-                    
-                    # Generate stones in a line across the screen - PERMANENTLY FIXED POSITIONS
-                    start_x = 200
-                    self.stones = []
-                    for i in range(self.points_to_win):
-                        stone_x = start_x + i * MAX_X_DISTANCE
-                        self.stones.append((stone_x, avg_y))
-                    
-                    self.visited = [False] * len(self.stones)
-                    self.stones_generated = True  # SET FLAG TO NEVER GENERATE AGAIN
-                    print(f"Stones PERMANENTLY generated at Y={avg_y}")
-                    print(f"Stone positions LOCKED: {self.stones}")
-                    break
-            return  # Exit early if stones not generated yet
-
-        # ONLY check for hits if stones are already generated (no stone modification)
+        # Get current foot positions
+        current_feet = []
         for kp in keypoints_list:
             feet = self.feet_positions(kp)
             if feet:
-                self.check_stones(feet)
+                current_feet.extend(feet)
+                break  # Use first valid detection
+        
+        self.current_foot_positions = current_feet
+        
+        # Generate first stone if none exists
+        if self.current_stone is None:
+            self.generate_next_stone(current_feet)
+            return
+        
+        # Check for stone hits
+        if current_feet:
+            self.check_stones(current_feet)
 
     def check_stones(self, feet):
-        """Check if any foot is touching the next stone"""
-        if self.hit_cooldown > 0:
+        """Check if any foot is touching the current stone"""
+        if self.hit_cooldown > 0 or self.current_stone is None:
             return
             
-        try:
-            # Find the next unvisited stone
-            next_index = self.visited.index(False)
-            stone_x, stone_y = self.stones[next_index]
+        stone_x, stone_y = self.current_stone
+        
+        # Check each foot against the stone
+        for foot_x, foot_y in feet:
+            distance = np.sqrt((foot_x - stone_x)**2 + (foot_y - stone_y)**2)
             
-            # Check each foot against the stone with more generous detection
-            for i, (fx, fy) in enumerate(feet):
-                distance_x = abs(fx - stone_x)
-                distance_y = abs(fy - stone_y)
+            # Very generous detection - use the larger detection radius
+            if distance <= STONE_DETECTION_RADIUS:
+                # Stone hit!
+                self.score += 1
+                self.hit_cooldown = self.min_cooldown_frames
                 
-                # More generous detection - larger radius and separate X/Y thresholds
-                hit_radius_x = POINT_RADIUS + 20  # Extra 20 pixels in X direction
-                hit_radius_y = POINT_RADIUS + 15  # Extra 15 pixels in Y direction
+                # Check if game is complete
+                if self.score >= self.points_to_win:
+                    self.game_over = True
+                    self.current_stone = None
+                else:
+                    # Generate next stone
+                    self.generate_next_stone(feet)
                 
-                foot_name = "Left" if i == 0 else "Right"
-                
-                # Debug print for each foot
-                print(f"{foot_name} foot: ({fx},{fy}) vs Stone: ({stone_x},{stone_y}) - X_diff: {distance_x:.1f}, Y_diff: {distance_y:.1f}")
-                
-                # Check if foot is within the generous detection area
-                if distance_x <= hit_radius_x and distance_y <= hit_radius_y:
-                    self.visited[next_index] = True
-                    self.score += 1
-                    self.hit_cooldown = self.min_cooldown_frames
-                    
-                    print(f"STONE HIT! {foot_name} foot hit stone {next_index + 1}")
-                    print(f"Score: {self.score}/{self.points_to_win}")
-                    
-                    if self.score >= self.points_to_win:
-                        self.game_over = True
-                        print("Game completed!")
-                    return  # Exit after first hit
-                    
-        except ValueError:
-            # All stones have been visited
-            pass
+                return  # Exit after first hit
 
     def draw_stone_on_surface(self, surface, offset=(0,0)):
-        """Draw the next stone that needs to be reached"""
-        try:
-            next_index = self.visited.index(False)
-            stone_x, stone_y = self.stones[next_index]
-            ox, oy = offset
+        """Draw the current stone that needs to be reached"""
+        if self.current_stone is None:
+            return
             
-            # Draw the stone as a blue circle
-            pygame.draw.circle(surface, (0, 100, 255), (stone_x + ox, stone_y + oy), POINT_RADIUS, 5)
-            
-            # Draw stone number
-            font = pygame.font.Font(None, 36)
-            text = font.render(str(next_index + 1), True, (255, 255, 255))
-            text_rect = text.get_rect(center=(stone_x + ox, stone_y + oy))
-            surface.blit(text, text_rect)
-            
-            # Draw all future stones as smaller circles
-            for i in range(next_index + 1, len(self.stones)):
-                future_x, future_y = self.stones[i]
-                pygame.draw.circle(surface, (150, 150, 255), (future_x + ox, future_y + oy), POINT_RADIUS // 2, 2)
-                
-        except ValueError:
-            # All stones visited - could draw a completion indicator
-            pass
+        stone_x, stone_y = self.current_stone
+        ox, oy = offset
+        
+        # Draw the stone as a blue circle with a border
+        pygame.draw.circle(surface, (0, 150, 255), (stone_x + ox, stone_y + oy), POINT_RADIUS, 0)
+        pygame.draw.circle(surface, (0, 100, 200), (stone_x + ox, stone_y + oy), POINT_RADIUS, 3)
+        
+        # Draw detection area (optional - for debugging)
+        # pygame.draw.circle(surface, (100, 200, 255, 50), (stone_x + ox, stone_y + oy), STONE_DETECTION_RADIUS, 2)
+        
+        # Draw stone number (current score + 1)
+        font = pygame.font.Font(None, 48)
+        text = font.render(str(self.score + 1), True, (255, 255, 255))
+        text_rect = text.get_rect(center=(stone_x + ox, stone_y + oy))
+        surface.blit(text, text_rect)
+        
+        # Draw progress indicator
+        progress_text = f"Stone {self.score + 1}/{self.points_to_win}"
+        progress_font = pygame.font.Font(None, 36)
+        progress_surface = progress_font.render(progress_text, True, (255, 255, 255))
+        surface.blit(progress_surface, (10, 10))
+
+    def draw_foot_positions(self, surface, offset=(0,0)):
+        """Helper method to draw current foot positions for debugging"""
+        ox, oy = offset
+        for i, (fx, fy) in enumerate(self.current_foot_positions):
+            color = (255, 100, 100) if i == 0 else (100, 255, 100)  # Red for left, green for right
+            pygame.draw.circle(surface, color, (fx + ox, fy + oy), 15, 3)
 
     def reset_game(self):
         """Reset the game state for a new round"""
         self.score = 0
         self.game_over = False
-        self.stones = []
-        self.visited = []
-        self.stones_generated = False
+        self.current_stone = None
         self.hit_cooldown = 0
         self.left_foot_history.clear()
         self.right_foot_history.clear()
-        print("Game reset")
+        self.current_foot_positions = []
+        self.last_foot_y = None
