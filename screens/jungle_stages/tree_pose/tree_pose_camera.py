@@ -101,9 +101,9 @@ class TreePoseCamera:
             self.screen.blit(self.frame, (0, 0))
             seconds_left = self.game_logic.update(self.keypoints)
 
-            # Draw visual indicators for pose detection
+            """# Draw visual indicators for pose detection
             if self.keypoints:
-                self.draw_pose_indicators()
+                self.draw_pose_indicators()"""
 
         elif not self.camera_on and not self.game_logic.game_over:
             pause_font = dynapuff(60)
@@ -115,7 +115,7 @@ class TreePoseCamera:
         # Instructions
         if not self.game_logic.game_over and not self.game_logic.pose_achieved:
             instruction_font = dynapuff(30)
-            instruction_text = instruction_font.render("Stand on one leg like a tree!", True, (255, 255, 255))
+            instruction_text = instruction_font.render("Stand on one leg like a tree, then switch sides!", True, (255, 255, 255))
             instruction_rect = instruction_text.get_rect(center=(self.screen.get_width() // 2, 50))
             self.screen.blit(instruction_text, instruction_rect)
 
