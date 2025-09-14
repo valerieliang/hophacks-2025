@@ -14,44 +14,49 @@ class TreeGrowthManager:
         self.progress = 0.0   # 0.0 = half height, 1.0 = full height
         self.active = False
         self.finished = False
+        self.growth_speed = 0.33  # faster growth
+        self.countdown_finished = False  # to stop growth once countdown ends
 
     def start_new_tree(self):
-        """Start growing a new random tree in a safe spot"""
+        """Start growing a new random tree on left or right edge"""
+        # Only start a new tree if none active
+        if self.active:
+            return
+
         self.current_tree = random.choice(self.tree_images)
         
-        # Pick random x, avoiding the human frame (middle of screen)
-        safe_margin = 200
-        mid_zone = (self.screen_w // 2 - safe_margin, self.screen_w // 2 + safe_margin)
-        while True:
-            x = random.randint(50, self.screen_w - 150)
-            if not (mid_zone[0] <= x <= mid_zone[1]):
-                break
+        # Choose left or right edge
+        side = random.choice(["left", "right"])
+        x = 0 if side == "left" else self.screen_w - self.current_tree.get_width()
 
         y = self.screen_h  # bottom aligned
         self.current_pos = (x, y)
         self.progress = 0.0
         self.active = True
         self.finished = False
+        self.countdown_finished = False
 
     def update(self, seconds_left, hold_time):
         """Update growth based on countdown"""
-        if not self.active:
+        if not self.active or self.finished:
             return
 
         if seconds_left is not None and seconds_left > 0:
-            self.progress = 1.0 - (seconds_left / hold_time)
+            # Grow tree proportionally plus speed
+            self.progress = min(1.0, 1.0 - (seconds_left / hold_time) + self.growth_speed)
         else:
-            # Ensure the tree finishes if countdown ends but game isn’t over yet
-            self.progress = min(1.0, self.progress + 0.02)
+            # Stop growth once countdown ends
+            self.countdown_finished = True
 
-        if self.progress >= 1.0:
+        if self.progress >= 1.0 or self.countdown_finished:
+            self.progress = min(1.0, self.progress)
             self.finished = True
 
     def draw(self, screen):
         if not self.active or self.current_tree is None:
             return
 
-        # Keep width fixed
+        # Original size
         tree_w, tree_h = self.current_tree.get_size()
 
         # Height goes from 0.5 * screen_h → 1.0 * screen_h
@@ -59,16 +64,25 @@ class TreeGrowthManager:
         max_h = self.screen_h
         new_h = int(min_h + (max_h - min_h) * self.progress)
 
-        # Scale only vertically
-        scaled_tree = pygame.transform.smoothscale(self.current_tree, (tree_w, new_h))
+        # Make tree skinnier: scale width to 50%-70% of original
+        skinny_factor = 0.3 
+        new_w = int(tree_w * skinny_factor)
+
+        # Scale the tree
+        scaled_tree = pygame.transform.smoothscale(self.current_tree, (new_w, new_h))
 
         # Align bottom
         x, y_bottom = self.current_pos
+        # If tree is on the right, adjust x so it still touches the edge
+        if x > 0:
+            x = self.screen_w - new_w
         y_top = y_bottom - new_h
         screen.blit(scaled_tree, (x, y_top))
+
 
     def reset(self):
         self.active = False
         self.current_tree = None
         self.progress = 0.0
         self.finished = False
+        self.countdown_finished = False

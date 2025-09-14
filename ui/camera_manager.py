@@ -14,7 +14,7 @@ class CameraManager:
         if frame is None:
             return None, None, None
 
-        # Run pose detection
+        # Run pose detectionW
         annotated_frame, keypoints = self.pose_estimator.detect(frame)
 
         # Mirror effect
