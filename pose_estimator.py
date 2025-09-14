@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+import numpy as np
 
 class PoseEstimator:
     def __init__(self, model_path="yolov8n-pose.pt"):
@@ -18,13 +19,27 @@ class PoseEstimator:
         if results[0].keypoints is None:
             return annotated_frame, []
 
+        # Access the actual keypoint data properly
+        keypoints_data = results[0].keypoints.data  # This is the tensor with keypoint data
+        
+        if keypoints_data is None or len(keypoints_data) == 0:
+            return annotated_frame, []
+
+        # Convert tensor to numpy for easier processing
+        keypoints_numpy = keypoints_data.cpu().numpy()
+
         # loop over detected humans
-        for human_kp in results[0].keypoints:
-            full_kp = [[0,0,0]]*17  # initialize with zeros
-            for i, kp in enumerate(human_kp):
-                if i >= 17:
-                    break
-                full_kp[i] = list(kp)  # convert ndarray to list
+        for human_idx in range(keypoints_numpy.shape[0]):
+            human_keypoints = keypoints_numpy[human_idx]  # Shape: (17, 3) for [x, y, conf]
+            
+            full_kp = []
+            for kp_idx in range(17):  # Ensure we have exactly 17 keypoints
+                if kp_idx < len(human_keypoints):
+                    x, y, conf = human_keypoints[kp_idx]
+                    full_kp.append([float(x), float(y), float(conf)])
+                else:
+                    full_kp.append([0.0, 0.0, 0.0])  # Fill missing keypoints with zeros
+            
             humans_keypoints.append(full_kp)
 
         return annotated_frame, humans_keypoints

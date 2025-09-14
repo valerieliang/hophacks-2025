@@ -54,6 +54,9 @@ class AnimalMarchCamera:
             size=(300, 80)
         )
 
+        # Debug flag
+        self.show_debug = True
+
         # Start camera thread
         self.start_camera_thread()
 
@@ -61,36 +64,55 @@ class AnimalMarchCamera:
         if self._thread and self._thread.is_alive():
             return
         self.cap = cv2.VideoCapture(0)
+        if not self.cap.isOpened():
+            print("Failed to open camera!")
+            return
         self._stop_thread = False
         self._thread = threading.Thread(target=self._capture_loop, daemon=True)
         self._thread.start()
 
     def _capture_loop(self):
         while not self._stop_thread:
-            if self.camera_on and self.cap.isOpened():
+            if self.camera_on and self.cap and self.cap.isOpened():
                 ret, frame = self.cap.read()
                 if ret:
-                    # Get processed frame and keypoints as list
-                    self.frame, _, humans_keypoints = self.camera_manager.process_frame(frame)
-                    
-                    if humans_keypoints is None:
+                    # returns annotated frame and list of humans
+                    try:
+                        frame_surface, _, humans_keypoints = self.camera_manager.process_frame(frame)
+                        self.frame = frame_surface
+
+                        if humans_keypoints is None:
+                            self.keypoints = []
+                        else:
+                            # Ensure each human has 17 keypoints
+                            cleaned = []
+                            for kp in humans_keypoints:
+                                if len(kp) < 17:
+                                    # Pad with zeros if not enough keypoints
+                                    kp = kp + [[0.0, 0.0, 0.0]] * (17 - len(kp))
+                                elif len(kp) > 17:
+                                    # Truncate if too many keypoints
+                                    kp = kp[:17]
+                                cleaned.append(kp)
+                            self.keypoints = cleaned
+                    except Exception as e:
+                        print(f"Error processing frame: {e}")
+                        self.frame = None
                         self.keypoints = []
-                    else:
-                        cleaned = []
-                        for kp in humans_keypoints:
-                            # ensure 17 keypoints per human
-                            if len(kp) < 17:
-                                kp = kp + [[0,0,0]]*(17 - len(kp))
-                            cleaned.append(kp)
-                        self.keypoints = cleaned
             time.sleep(0.01)
 
-
-    def stop_camera(self):
+    def stop_camera_thread(self):
+        """Properly stop the camera thread"""
         self._stop_thread = True
+        if self._thread and self._thread.is_alive():
+            self._thread.join(timeout=1.0)
         if self.cap and self.cap.isOpened():
             self.cap.release()
         self.cap = None
+
+    def stop_camera(self):
+        """Legacy method name for compatibility"""
+        self.stop_camera_thread()
 
     def draw(self):
         self.screen.fill((102, 204, 255))
@@ -115,6 +137,16 @@ class AnimalMarchCamera:
         score_text = self.font.render(f"Score: {self.game_logic.score}", True, (255, 255, 255))
         self.screen.blit(score_text, (20, self.screen.get_height() - 50))
 
+        # Debug information
+        if self.show_debug and self.camera_on and not self.game_logic.game_over:
+            self.game_logic.draw_debug_info()
+            
+            # Show keypoint count
+            kp_count = len(self.keypoints) if self.keypoints else 0
+            debug_font = pygame.font.Font(None, 24)
+            kp_text = debug_font.render(f"Humans detected: {kp_count}", True, (255, 255, 0))
+            self.screen.blit(kp_text, (10, 130))
+
         # Buttons
         if not self.game_logic.game_over:
             self.camera_button.draw()
@@ -135,7 +167,7 @@ class AnimalMarchCamera:
     def handle_event(self, event, mouse_pos):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.back_button.is_clicked(mouse_pos):
-                self.stop_camera()
+                self.stop_camera_thread()
                 return "animal_march_intro"
 
             # Camera toggle (start/stop)
@@ -144,10 +176,17 @@ class AnimalMarchCamera:
                 if self.camera_on:
                     # Only start camera thread if turned on
                     self.start_camera_thread()
+                else:
+                    # Stop camera thread when turned off
+                    self.stop_camera_thread()
 
             # Back to menu button after game over
             if self.game_logic.game_over and self.menu_button.is_clicked(mouse_pos):
                 self.stop_camera_thread()
                 return "jungle_selector"
+
+        # Toggle debug with 'D' key
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_d:
+            self.show_debug = not self.show_debug
 
         return None

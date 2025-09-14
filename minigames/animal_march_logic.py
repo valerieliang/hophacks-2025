@@ -1,7 +1,7 @@
 import numpy as np
 import random
+import pygame
 from collections import deque
-from screens.jungle_stages.animal_march.animal_march_camera import *
 from assets.fonts import dynapuff
 
 FRUIT_SIZE = (100, 100)
@@ -34,67 +34,110 @@ class AnimalMarchGame:
         self.knee_was_up = False
         self.initialized = False
 
-        # Smoothing
-        self.knee_history_len = 5
+        # Smoothing with longer history for more stable detection
+        self.knee_history_len = 8
         self.left_knee_history = deque(maxlen=self.knee_history_len)
         self.right_knee_history = deque(maxlen=self.knee_history_len)
-        self.threshold = 20
-
+        
+        # Movement detection
+        self.march_cooldown = 0  # Prevent multiple triggers
+        self.min_cooldown_frames = 15  # Minimum frames between march detections
+        
         # Active fruits
         self.falling_fruits = []
 
+        # Debug info
+        self.debug_text = ""
+
     def process_keypoints(self, keypoints):
         """
-        keypoints: list of humans, each human is a list of 17 [x,y,conf]
-        Uses ankles, knees, hips for game logic
+        keypoints: list of humans, each human is a list of 17 [x, y, conf]
+        Only uses hips and knees; ignores missing keypoints
         """
         if not keypoints:
+            self.debug_text = "No humans detected"
             return
 
-        # Use first human detected
-        kp = keypoints[0]
-        if len(kp) < 15:
-            print(f"Partial keypoints detected: {len(kp)} points (not enough for knees/hips)")
-            return
+        kp = keypoints[0]  # Use first human
 
-        # Extract relevant joints
-        left_hip_y = kp[11][1]
-        right_hip_y = kp[12][1]
-        left_knee_y = kp[13][1]
-        right_knee_y = kp[14][1]
+        # Confidence threshold for detecting a keypoint
+        conf_thresh = 0.5
+        march_threshold = 30  # Increased threshold for more reliable detection
 
-        # Smooth with history
-        self.left_knee_history.append(left_knee_y)
-        self.right_knee_history.append(right_knee_y)
-        left_knee_avg = sum(self.left_knee_history)/len(self.left_knee_history)
-        right_knee_avg = sum(self.right_knee_history)/len(self.right_knee_history)
+        # Extract knees and hips with confidence check
+        left_knee = kp[13]   # [x, y, conf]
+        right_knee = kp[14]  # [x, y, conf]
+        left_hip = kp[11]    # [x, y, conf] 
+        right_hip = kp[12]   # [x, y, conf]
 
-        # Check if knee is up
-        knee_up = (left_knee_avg < left_hip_y + self.threshold or
-                right_knee_avg < right_hip_y + self.threshold)
+        # Check if keypoints are valid
+        left_knee_valid = left_knee[2] >= conf_thresh
+        right_knee_valid = right_knee[2] >= conf_thresh
+        left_hip_valid = left_hip[2] >= conf_thresh
+        right_hip_valid = right_hip[2] >= conf_thresh
 
-        if not self.initialized:
-            self.knee_was_up = knee_up
-            self.initialized = True
-            return
+        self.debug_text = f"LK: {left_knee_valid} RK: {right_knee_valid} LH: {left_hip_valid} RH: {right_hip_valid}"
 
-        if knee_up and not self.knee_was_up and self.score < self.max_score:
-            self.score += 1
-            self.knee_was_up = True
+        # Need at least both knees or both hips to be visible
+        if not (left_knee_valid and right_knee_valid):
+            if not (left_hip_valid and right_hip_valid):
+                self.debug_text += " - Insufficient keypoints"
+                return
 
-            # Spawn a fruit
-            fruit_img = random.choice(self.fruit_images)
-            x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
-            self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
+        # Reduce cooldown
+        if self.march_cooldown > 0:
+            self.march_cooldown -= 1
 
-            # Check for win
-            if self.score >= self.max_score:
-                self.game_over = True
-                self.next_screen = "jungle_win"
+        # Use knees if available, otherwise use hips
+        if left_knee_valid and right_knee_valid:
+            left_y = left_knee[1]
+            right_y = right_knee[1]
+            joint_type = "knee"
+        else:
+            left_y = left_hip[1]
+            right_y = right_hip[1]
+            joint_type = "hip"
 
-        elif not knee_up:
-            self.knee_was_up = False
+        # Add to history for smoothing
+        self.left_knee_history.append(left_y)
+        self.right_knee_history.append(right_y)
 
+        # Calculate smoothed positions
+        if len(self.left_knee_history) >= 3 and len(self.right_knee_history) >= 3:
+            left_avg = sum(self.left_knee_history) / len(self.left_knee_history)
+            right_avg = sum(self.right_knee_history) / len(self.right_knee_history)
+            
+            # Calculate difference
+            height_diff = abs(left_avg - right_avg)
+            
+            # Check for marching motion
+            is_marching = height_diff >= march_threshold
+            
+            self.debug_text += f" | {joint_type.upper()} diff: {height_diff:.1f}"
+
+            if not self.initialized:
+                self.knee_was_up = is_marching
+                self.initialized = True
+                return
+
+            # Detect march step (transition from not marching to marching)
+            if (is_marching and not self.knee_was_up and 
+                self.march_cooldown == 0 and self.score < self.max_score):
+                
+                self.score += 1
+                self.march_cooldown = self.min_cooldown_frames
+                self.debug_text += f" | MARCH! Score: {self.score}"
+
+                # Spawn a fruit
+                fruit_img = random.choice(self.fruit_images)
+                x_pos = random.randint(0, self.screen.get_width() - FRUIT_SIZE[0])
+                self.falling_fruits.append(FallingFruit(fruit_img, x_pos))
+
+                if self.score >= self.max_score:
+                    self.game_over = True
+                    self.next_screen = "jungle_win"
+
+            self.knee_was_up = is_marching
 
     def update_fruits(self):
         """Move fruits down the screen"""
@@ -106,6 +149,13 @@ class AnimalMarchGame:
     def draw_fruits(self):
         for fruit in self.falling_fruits:
             fruit.draw(self.screen)
+
+    def draw_debug_info(self):
+        """Draw debug information on screen"""
+        if self.debug_text:
+            debug_font = pygame.font.Font(None, 24)
+            debug_surface = debug_font.render(self.debug_text, True, (255, 255, 0))
+            self.screen.blit(debug_surface, (10, 100))
 
     def get_next_screen(self):
         if self.game_over and self.next_screen:
