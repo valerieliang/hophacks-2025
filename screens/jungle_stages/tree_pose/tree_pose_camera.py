@@ -72,8 +72,7 @@ class TreePoseCamera:
         # Draw camera frame if active
         if self.camera_on and self.frame is not None and not self.game_logic.game_over:
             self.screen.blit(self.frame, (0, 0))
-            if self.keypoints is not None:
-                self.game_logic.update(self.keypoints)
+            self.game_logic.update(self.keypoints)
 
         elif not self.camera_on and not self.game_logic.game_over:
             pause_font = dynapuff(60)

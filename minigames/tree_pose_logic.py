@@ -1,7 +1,7 @@
 import time
 
 class TreePoseLogic:
-    def __init__(self, hold_time=10, knee_threshold=10, stability_threshold=15):
+    def __init__(self, hold_time=10, knee_threshold=30, stability_threshold=15):
         """
         hold_time: seconds the pose must be held to win
         knee_threshold: minimum y difference to consider a leg lifted
@@ -29,31 +29,32 @@ class TreePoseLogic:
                    each as (x, y)
         Returns: seconds left if countdown active, None otherwise
         """
-        required_keys = ['left_knee', 'right_knee', 'left_ankle', 'right_ankle']
+        required_keys = ['left_hip', 'right_hip', 'left_knee', 'right_knee']
         if not all(k in keypoints for k in required_keys):
             self.in_pose_start = None
             self.timer_start = None
             self.pose_achieved = False
             self.last_support_y = None
+            print("nothing detected")
             return None
-
-        # Extract positions
+        
+        left_hip_y = keypoints['left_hip'][1]
+        right_hip_y = keypoints['right_hip'][1]
         left_knee_y = keypoints['left_knee'][1]
         right_knee_y = keypoints['right_knee'][1]
-        left_ankle_y = keypoints['left_ankle'][1] # ankles
-        right_ankle_y = keypoints['right_ankle'][1]
 
         # Determine which leg is lifted using ankle height
         lifted_leg = None
         support_y = None
-        if left_ankle_y < right_knee_y - self.knee_threshold:
+        if left_knee_y > right_hip_y - self.knee_threshold:
             lifted_leg = 'left'
-            support_y = right_knee_y
-        elif right_ankle_y < left_knee_y - self.knee_threshold:
+            support_y = right_hip_y
+        elif right_knee_y > left_hip_y - self.knee_threshold:
             lifted_leg = 'right'
-            support_y = left_knee_y
+            support_y = left_hip_y
 
         if lifted_leg:
+            print("leg up")
             # Check stability of supporting leg
             if self.last_support_y is None:
                 self.last_support_y = support_y
@@ -74,6 +75,7 @@ class TreePoseLogic:
             self.last_support_y = support_y
         else:
             # Not in pose, reset
+            print('no leg up')
             self.in_pose_start = None
             self.timer_start = None
             self.pose_achieved = False
