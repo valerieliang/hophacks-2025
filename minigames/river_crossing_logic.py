@@ -29,7 +29,7 @@ class RiverCrossingGame:
         Returns list of detected ankles [(x,y), ...] or None if none found
         """
         if keypoints is None or len(keypoints) < 17:
-            #print(f"Partial keypoints detected: {0 if keypoints is None else len(keypoints)} points")
+            print(f"Partial keypoints detected: {0 if keypoints is None else len(keypoints)} points")
             return None
 
         # Extract ankle keypoints (indices 15 and 16)
@@ -73,7 +73,7 @@ class RiverCrossingGame:
             detected = "Left" if left_conf >= conf_threshold else "Right"
             print(f"Only {detected} ankle detected ({missing} missing): {feet[0]}")
         else:
-            #print(f"No ankles detected with sufficient confidence: L:{left_conf:.2f} R:{right_conf:.2f}")
+            print(f"No ankles detected with sufficient confidence: L:{left_conf:.2f} R:{right_conf:.2f}")
             return None
 
         return feet
@@ -86,15 +86,15 @@ class RiverCrossingGame:
         if self.hit_cooldown > 0:
             self.hit_cooldown -= 1
 
-        # Generate first stones if not yet done
-        if self.score == 0 and not self.stones_generated:
+        # Generate stones ONLY ONCE when not yet generated
+        if not self.stones_generated:
             for kp in keypoints_list:
                 feet = self.feet_positions(kp)
                 if feet and len(feet) >= 1:
                     # Use the average Y position of detected feet
                     avg_y = sum(f[1] for f in feet) // len(feet)
                     
-                    # Generate stones in a line across the screen
+                    # Generate stones in a line across the screen - PERMANENTLY FIXED POSITIONS
                     start_x = 200
                     self.stones = []
                     for i in range(self.points_to_win):
@@ -102,28 +102,16 @@ class RiverCrossingGame:
                         self.stones.append((stone_x, avg_y))
                     
                     self.visited = [False] * len(self.stones)
-                    self.stones_generated = True
-                    print(f"Initial stones generated at Y={avg_y}, total stones: {len(self.stones)}")
-                    print(f"Stone positions: {self.stones}")
+                    self.stones_generated = True  # SET FLAG TO NEVER GENERATE AGAIN
+                    print(f"Stones PERMANENTLY generated at Y={avg_y}")
+                    print(f"Stone positions LOCKED: {self.stones}")
                     break
+            return  # Exit early if stones not generated yet
 
-        # Update stone positions and check for hits
-        if self.stones_generated:
-            for kp in keypoints_list:
-                feet = self.feet_positions(kp)
-                if not feet:
-                    continue
-
-                # Update the Y position of unvisited stones based on current foot position
-                try:
-                    next_index = self.visited.index(False)
-                    stone_x, _ = self.stones[next_index]
-                    avg_y = sum(f[1] for f in feet) // len(feet)
-                    self.stones[next_index] = (stone_x, avg_y)
-                except ValueError:
-                    pass  # All stones visited
-
-                # Check for stone hits
+        # ONLY check for hits if stones are already generated (no stone modification)
+        for kp in keypoints_list:
+            feet = self.feet_positions(kp)
+            if feet:
                 self.check_stones(feet)
 
     def check_stones(self, feet):
@@ -136,24 +124,33 @@ class RiverCrossingGame:
             next_index = self.visited.index(False)
             stone_x, stone_y = self.stones[next_index]
             
-            # Check each foot against the stone
-            for fx, fy in feet:
+            # Check each foot against the stone with more generous detection
+            for i, (fx, fy) in enumerate(feet):
                 distance_x = abs(fx - stone_x)
                 distance_y = abs(fy - stone_y)
                 
-                # Check if foot is within stone radius
-                if distance_x < POINT_RADIUS and distance_y < POINT_RADIUS:
+                # More generous detection - larger radius and separate X/Y thresholds
+                hit_radius_x = POINT_RADIUS + 20  # Extra 20 pixels in X direction
+                hit_radius_y = POINT_RADIUS + 15  # Extra 15 pixels in Y direction
+                
+                foot_name = "Left" if i == 0 else "Right"
+                
+                # Debug print for each foot
+                print(f"{foot_name} foot: ({fx},{fy}) vs Stone: ({stone_x},{stone_y}) - X_diff: {distance_x:.1f}, Y_diff: {distance_y:.1f}")
+                
+                # Check if foot is within the generous detection area
+                if distance_x <= hit_radius_x and distance_y <= hit_radius_y:
                     self.visited[next_index] = True
                     self.score += 1
                     self.hit_cooldown = self.min_cooldown_frames
                     
-                    print(f"Stone {next_index + 1} hit! Foot at ({fx},{fy}), Stone at ({stone_x},{stone_y})")
+                    print(f"STONE HIT! {foot_name} foot hit stone {next_index + 1}")
                     print(f"Score: {self.score}/{self.points_to_win}")
                     
                     if self.score >= self.points_to_win:
                         self.game_over = True
                         print("Game completed!")
-                    break
+                    return  # Exit after first hit
                     
         except ValueError:
             # All stones have been visited

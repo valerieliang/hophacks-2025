@@ -15,7 +15,7 @@ class RiverCrossingCamera:
         self.cap = None
         self.camera_manager = CameraManager(screen)
         self.back_button = BackButton(screen, pos=(60, 60))
-        self.camera_button = CameraToggleButton(screen, size=200)
+        self.camera_button = CameraToggleButton(screen, size=180)
         self.font = dynapuff(40)
         self.camera_on = False
 
@@ -58,6 +58,9 @@ class RiverCrossingCamera:
                 ret, frame = self.cap.read()
                 if ret:
                     try:
+                        # Mirror the frame horizontally for natural interaction
+                        frame = cv2.flip(frame, 1)
+                        
                         # Use process_frame method which returns frame_surface, _, humans_keypoints
                         frame_surface, _, humans_keypoints = self.camera_manager.process_frame(frame)
                         
@@ -164,6 +167,16 @@ class RiverCrossingCamera:
         debug_text = debug_font.render(f"Humans detected: {human_count}", True, (255, 255, 0))
         self.screen.blit(debug_text, (10, y_offset))
         y_offset += 25
+        
+        # Show foot coordinates only in debug mode
+        if self.keypoints:
+            for i, kp in enumerate(self.keypoints):
+                feet = self.game_logic.feet_positions(kp)
+                if feet:
+                    for j, (fx, fy) in enumerate(feet):
+                        coord_text = debug_font.render(f"Foot {j+1}: ({fx},{fy})", True, (255, 255, 0))
+                        self.screen.blit(coord_text, (10, y_offset))
+                        y_offset += 20
         
         # Stones info
         if self.game_logic.stones:
